@@ -240,10 +240,20 @@ jobs:
               --header "x-apikey: $VT_API_KEY" \
               --form "file=@${file}")
 
-            local id
+            local id sha256
             id=$(echo "$response" | jq -r '.data.id // empty')
             if [ -n "$id" ]; then
-              echo "${label}=https://www.virustotal.com/gui/file-analysis/${id}" >> "$GITHUB_OUTPUT"
+              # Récupère le SHA256 depuis le rapport pour construire une URL stable
+              # qui ne redirige pas vers un fichier tiers en cas de déduplication VT
+              sleep 5
+              sha256=$(curl -s --request GET \
+                --url "https://www.virustotal.com/api/v3/analyses/${id}" \
+                --header "x-apikey: $VT_API_KEY" | jq -r '.meta.file_info.sha256 // empty')
+              if [ -n "$sha256" ]; then
+                echo "${label}=https://www.virustotal.com/gui/file/${sha256}" >> "$GITHUB_OUTPUT"
+              else
+                echo "${label}=https://www.virustotal.com/gui/file-analysis/${id}" >> "$GITHUB_OUTPUT"
+              fi
             else
               echo "VT upload failed for $label: $response" >&2
               echo "${label}=" >> "$GITHUB_OUTPUT"
