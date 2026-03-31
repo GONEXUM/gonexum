@@ -33,26 +33,15 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Download ffprobe (macOS ${{ matrix.arch }})
-        run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            curl -L "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip" -o ffprobe.zip
-          else
-            curl -L "https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip" -o ffprobe.zip
-          fi
-          unzip -o ffprobe.zip
-          chmod +x ffprobe
-
       - name: Build (macOS ${{ matrix.arch }})
         run: wails build -platform darwin/${{ matrix.arch }} -o GONEXUM
         env:
           CGO_ENABLED: "1"
 
-      - name: Package .app + ffprobe as zip
+      - name: Package .app as zip
         run: |
-          cp ffprobe build/bin/ffprobe
           cd build/bin
-          zip -r GONEXUM-macos-${{ matrix.arch }}.zip GONEXUM.app ffprobe
+          zip -r GONEXUM-macos-${{ matrix.arch }}.zip GONEXUM.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -85,33 +74,16 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Download ffprobe (Windows)
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_tmp
-          Copy-Item (Get-ChildItem -Path ffmpeg_tmp -Recurse -Filter "ffprobe.exe" | Select-Object -First 1).FullName -Destination ffprobe.exe
-
       - name: Build (Windows amd64)
         run: wails build -platform windows/amd64 -o GONEXUM.exe
         env:
           CGO_ENABLED: "1"
 
-      - name: Bundle ffprobe alongside exe
-        shell: pwsh
-        run: |
-          Copy-Item ffprobe.exe build/bin/ffprobe.exe
-
-      - name: Package as zip
-        shell: pwsh
-        run: |
-          Compress-Archive -Path build/bin/GONEXUM.exe, build/bin/ffprobe.exe -DestinationPath build/bin/GONEXUM-windows-amd64.zip
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: GONEXUM-windows-amd64
-          path: build/bin/GONEXUM-windows-amd64.zip
+          path: build/bin/GONEXUM.exe
 
   release:
     name: Publish Release
@@ -134,7 +106,7 @@ jobs:
           files: |
             dist/GONEXUM-macos-amd64/GONEXUM-macos-amd64.zip
             dist/GONEXUM-macos-arm64/GONEXUM-macos-arm64.zip
-            dist/GONEXUM-windows-amd64/GONEXUM-windows-amd64.zip
+            dist/GONEXUM-windows-amd64/GONEXUM.exe
           generate_release_notes: false
           body: |
             ## GONEXUM ${{ github.ref_name }}
@@ -145,6 +117,4 @@ jobs:
             |---|---|
             | macOS Apple Silicon (M1->M5) | `GONEXUM-macos-arm64.zip` |
             | macOS Intel | `GONEXUM-macos-amd64.zip` |
-            | Windows 64-bit | `GONEXUM-windows-amd64.zip` |
-
-            > ffprobe est inclus dans chaque archive — aucune installation requise.
+            | Windows 64-bit | `GONEXUM.exe` |
