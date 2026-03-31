@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -134,14 +133,15 @@ func (a *App) CheckUpdate() UpdateInfo {
 	}
 
 	latest := strings.TrimPrefix(release.TagName, "v")
+	current := strings.TrimPrefix(AppVersion, "v")
 	info.Latest = latest
 	info.URL = release.HTMLURL
-	info.Available = latest != "" && latest != AppVersion
+	info.Available = latest != "" && latest != current
 
 	return info
 }
 
 // GetAppVersion returns the current app version
 func (a *App) GetAppVersion() string {
-	return fmt.Sprintf("v%s", AppVersion)
+	return "v" + strings.TrimPrefix(AppVersion, "v")
 }
