@@ -135,7 +135,11 @@ jobs:
             3. Cliquez sur **Ouvrir** dans la fenêtre d'avertissement
             4. Lors des lancements suivants, double-clic suffit
 
-            > Si macOS affiche "application endommagée", exécutez cette commande dans le Terminal :
+            > Si macOS affiche "application endommagée" et refuse d'ouvrir :
+            > - Allez dans **Réglages Système** → **Confidentialité et sécurité**
+            > - Faites défiler jusqu'à la section **Sécurité** et cliquez sur **Ouvrir quand même**
+            >
+            > Ou via le Terminal :
             > ```
             > xattr -cr /chemin/vers/GONEXUM.app
             > ```
