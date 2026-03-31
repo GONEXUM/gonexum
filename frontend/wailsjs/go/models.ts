@@ -34,30 +34,13 @@ export namespace main {
 	        this.frameRate = source["frameRate"];
 	    }
 	}
-	export class UpdateInfo {
-	    current: string;
-	    latest: string;
-	    available: boolean;
-	    url: string;
-
-	    static createFrom(source: any = {}) {
-	        return new UpdateInfo(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.current = source["current"];
-	        this.latest = source["latest"];
-	        this.available = source["available"];
-	        this.url = source["url"];
-	    }
-	}
 	export class Settings {
 	    apiKey: string;
 	    passkey: string;
 	    tmdbApiKey: string;
 	    trackerUrl: string;
 	    outputDir: string;
+	    nfoTemplate: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -70,6 +53,7 @@ export namespace main {
 	        this.tmdbApiKey = source["tmdbApiKey"];
 	        this.trackerUrl = source["trackerUrl"];
 	        this.outputDir = source["outputDir"];
+	        this.nfoTemplate = source["nfoTemplate"];
 	    }
 	}
 	export class TMDBDetails {
@@ -142,6 +126,24 @@ export namespace main {
 	        this.infoHash = source["infoHash"];
 	        this.name = source["name"];
 	        this.size = source["size"];
+	    }
+	}
+	export class UpdateInfo {
+	    current: string;
+	    latest: string;
+	    available: boolean;
+	    url: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.current = source["current"];
+	        this.latest = source["latest"];
+	        this.available = source["available"];
+	        this.url = source["url"];
 	    }
 	}
 	export class UploadMedia {

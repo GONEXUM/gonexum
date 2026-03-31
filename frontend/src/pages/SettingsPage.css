@@ -98,3 +98,123 @@
   margin-top: 8px;
   border-top: 1px solid var(--border-color);
 }
+
+/* NFO Template editor */
+.nfo-vars-details {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0;
+  overflow: hidden;
+}
+
+.nfo-vars-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px 12px;
+  user-select: none;
+  list-style: none;
+}
+.nfo-vars-summary::-webkit-details-marker { display: none; }
+.nfo-vars-summary::before {
+  content: '▶ ';
+  font-size: 10px;
+}
+details[open] .nfo-vars-summary::before {
+  content: '▼ ';
+}
+
+.nfo-vars-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.nfo-vars-group {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.nfo-var-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.nfo-var-name {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 10px;
+  background: var(--bg-input);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nfo-var-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.nfo-vars-hint {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  line-height: 1.8;
+}
+.nfo-vars-hint code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: var(--bg-input);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+
+.nfo-textarea {
+  width: 100%;
+  min-height: 220px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.nfo-textarea--error {
+  border-color: var(--error, #e53e3e) !important;
+}
+
+.nfo-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--error, #e53e3e);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.nfo-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--text-primary);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}

@@ -91,9 +91,10 @@ type UploadResponse struct {
 
 // Settings holds all user-configurable API keys and preferences
 type Settings struct {
-	APIKey     string `json:"apiKey"`
-	Passkey    string `json:"passkey"`
-	TMDBAPIKey string `json:"tmdbApiKey"`
-	TrackerURL string `json:"trackerUrl"`
-	OutputDir  string `json:"outputDir"`
+	APIKey      string `json:"apiKey"`
+	Passkey     string `json:"passkey"`
+	TMDBAPIKey  string `json:"tmdbApiKey"`
+	TrackerURL  string `json:"trackerUrl"`
+	OutputDir   string `json:"outputDir"`
+	NFOTemplate string `json:"nfoTemplate"`
 }
