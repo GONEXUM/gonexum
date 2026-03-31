@@ -98,8 +98,27 @@ type ffprobeFormat struct {
 	BitRate  string `json:"bit_rate"`
 }
 
+// ffprobePath returns the path to ffprobe: bundled next to the executable first, then PATH
+func ffprobePath() string {
+	exe, err := os.Executable()
+	if err == nil {
+		dir := filepath.Dir(exe)
+		// macOS .app bundle: Contents/MacOS/ffprobe
+		candidates := []string{
+			filepath.Join(dir, "ffprobe"),
+			filepath.Join(dir, "ffprobe.exe"),
+		}
+		for _, p := range candidates {
+			if _, err := os.Stat(p); err == nil {
+				return p
+			}
+		}
+	}
+	return "ffprobe" // fallback to PATH
+}
+
 func getMediaInfoFFprobe(filePath string) (MediaInfo, error) {
-	cmd := exec.Command("ffprobe",
+	cmd := exec.Command(ffprobePath(),
 		"-v", "quiet",
 		"-print_format", "json",
 		"-show_streams",
