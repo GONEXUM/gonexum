@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   SelectFile, SelectDirectory, CreateTorrent,
-  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, ReadTextFile, LargestVideoFile
+  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS } from '../services/mediainfo'
-import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
+import { BrowserOpenURL, EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import './UploadPage.css'
 
@@ -314,6 +314,13 @@ export default function UploadPage() {
       })
       setUploadResult(result)
       setStep('done')
+      if (result.torrent_id) {
+        try {
+          await DownloadTorrent(result.torrent_id)
+        } catch (_) {
+          // téléchargement non bloquant
+        }
+      }
     } catch (e) { err(e) }
     setLoading(false)
   }
@@ -821,9 +828,12 @@ export default function UploadPage() {
               </div>
               {uploadResult.url && (
                 <div style={{ marginTop: 12 }}>
-                  <a href={uploadResult.url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => BrowserOpenURL(uploadResult.url)}
+                  >
                     🔗 Voir sur Nexum
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
