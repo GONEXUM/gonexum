@@ -3,7 +3,12 @@ import { AppLoadSettings, AppSaveSettings, SelectDirectory } from '../../wailsjs
 import type { main } from '../../wailsjs/go/models'
 import './SettingsPage.css'
 
-export default function SettingsPage() {
+interface SettingsPageProps {
+  setupRequired?: boolean
+  onSaved?: () => void
+}
+
+export default function SettingsPage({ setupRequired, onSaved }: SettingsPageProps = {}) {
   const [settings, setSettings] = useState<main.Settings>({
     apiKey: '',
     passkey: '',
@@ -32,6 +37,7 @@ export default function SettingsPage() {
       await AppSaveSettings(settings)
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+      onSaved?.()
     } catch (e) {
       setError(String(e))
     }
@@ -70,6 +76,13 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {setupRequired && (
+        <div className="alert alert-warning" style={{ marginBottom: 16 }}>
+          <span>⚙</span>
+          <span>Veuillez configurer vos paramètres avant d'utiliser l'application.</span>
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-error" style={{ marginBottom: 16 }}>
