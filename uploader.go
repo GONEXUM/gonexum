@@ -1,0 +1,195 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/textproto"
+	"os"
+	"path/filepath"
+	"strconv"
+)
+
+// UploadTorrent uploads a torrent to the nexum tracker API
+func (a *App) UploadTorrent(params UploadParams) (UploadResponse, error) {
+	settings, err := loadSettings()
+	if err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to load settings: %w", err)
+	}
+	if settings.APIKey == "" {
+		return UploadResponse{}, fmt.Errorf("API key not configured. Please set it in Settings.")
+	}
+
+	// Write NFO content to a temp file
+	nfoPath := filepath.Join(os.TempDir(), "upload.nfo")
+	if err := os.WriteFile(nfoPath, []byte(params.NFOContent), 0600); err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to write NFO file: %w", err)
+	}
+	defer os.Remove(nfoPath)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	// Add .torrent file
+	if err := addFilePart(writer, "torrent", params.TorrentPath); err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to attach torrent file: %w", err)
+	}
+
+	// Add NFO file
+	if err := addFilePart(writer, "nfo", nfoPath); err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to attach NFO file: %w", err)
+	}
+
+	// Add string fields
+	fields := map[string]string{
+		"name":        params.Name,
+		"category_id": strconv.Itoa(params.CategoryID),
+	}
+	if params.Description != "" {
+		fields["description"] = params.Description
+	}
+	if params.TMDBId > 0 {
+		fields["tmdb_id"] = strconv.Itoa(params.TMDBId)
+	}
+	if params.TMDBType != "" {
+		fields["tmdb_type"] = params.TMDBType
+	}
+	if params.Resolution != "" {
+		fields["resolution"] = params.Resolution
+	}
+	if params.VideoCodec != "" {
+		fields["video_codec"] = params.VideoCodec
+	}
+	if params.AudioCodec != "" {
+		fields["audio_codec"] = params.AudioCodec
+	}
+	if params.AudioLanguages != "" {
+		fields["audio_languages"] = params.AudioLanguages
+	}
+	if params.HDRFormat != "" {
+		fields["hdr_format"] = params.HDRFormat
+	}
+	if params.Source != "" {
+		fields["source"] = params.Source
+	}
+
+	for k, v := range fields {
+		if err := writer.WriteField(k, v); err != nil {
+			return UploadResponse{}, fmt.Errorf("failed to write field %s: %w", k, err)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to close multipart writer: %w", err)
+	}
+
+	uploadURL := fmt.Sprintf("%s/api/v1/upload?apikey=%s", settings.TrackerURL, settings.APIKey)
+
+	req, err := http.NewRequest("POST", uploadURL, &body)
+	if err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return UploadResponse{}, fmt.Errorf("upload request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		var errResp struct {
+			Message string `json:"message"`
+			Error   string `json:"error"`
+		}
+		_ = json.Unmarshal(respBody, &errResp)
+		msg := errResp.Message
+		if msg == "" {
+			msg = errResp.Error
+		}
+		if msg == "" {
+			msg = string(respBody)
+		}
+		return UploadResponse{}, fmt.Errorf("server error %d: %s", resp.StatusCode, msg)
+	}
+
+	var result UploadResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return UploadResponse{}, fmt.Errorf("failed to parse server response: %w", err)
+	}
+
+	return result, nil
+}
+
+// DownloadTorrent downloads a torrent file by its ID from the tracker
+func (a *App) DownloadTorrent(torrentID int) (string, error) {
+	settings, err := loadSettings()
+	if err != nil {
+		return "", fmt.Errorf("failed to load settings: %w", err)
+	}
+	if settings.APIKey == "" {
+		return "", fmt.Errorf("API key not configured")
+	}
+
+	downloadURL := fmt.Sprintf("%s/api/v1/torrents/%d/download?apikey=%s",
+		settings.TrackerURL, torrentID, settings.APIKey)
+
+	resp, err := http.Get(downloadURL)
+	if err != nil {
+		return "", fmt.Errorf("download request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("download failed with status %d", resp.StatusCode)
+	}
+
+	outputDir := settings.OutputDir
+	if outputDir == "" {
+		outputDir = os.TempDir()
+	}
+	outputPath := filepath.Join(outputDir, fmt.Sprintf("nexum_%d.torrent", torrentID))
+
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return "", fmt.Errorf("failed to write torrent: %w", err)
+	}
+
+	return outputPath, nil
+}
+
+func addFilePart(writer *multipart.Writer, field, filePath string) error {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition",
+		fmt.Sprintf(`form-data; name="%s"; filename="%s"`, field, filepath.Base(filePath)))
+	h.Set("Content-Type", "application/octet-stream")
+
+	part, err := writer.CreatePart(h)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(part, f)
+	return err
+}
