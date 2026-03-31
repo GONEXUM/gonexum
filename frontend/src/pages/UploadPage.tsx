@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  SelectFile, SelectDirectory, CreateTorrent, GetMediaInfo,
+  SelectFile, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, ReadTextFile
 } from '../../wailsjs/go/main/App'
+import { getMediaInfoJS } from '../services/mediainfo'
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import './UploadPage.css'
@@ -171,8 +172,8 @@ export default function UploadPage() {
         videoPath = sourcePath
       }
       try {
-        const mi = await GetMediaInfo(videoPath)
-        setMediaInfo(mi)
+        const mi = await getMediaInfoJS(videoPath)
+        setMediaInfo(mi as any)
         setResolution(mi.resolution || '')
         setVideoCodec(mi.videoCodec || '')
         setAudioCodec(mi.audioCodec || '')
@@ -180,7 +181,6 @@ export default function UploadPage() {
         setHdrFormat(mi.hdrFormat || '')
         setSource(mi.source || '')
       } catch {
-        // ffprobe failed, user can fill manually
         setMediaInfo(null)
       }
       setStep('media')

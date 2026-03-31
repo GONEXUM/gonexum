@@ -4,6 +4,10 @@ import {main} from '../models';
 
 export function CheckUpdate():Promise<main.UpdateInfo>;
 
+export function GetFileSize(arg1:string):Promise<number>;
+
+export function ReadFileChunk(arg1:string,arg2:number,arg3:number):Promise<string>;
+
 export function GetAppVersion():Promise<string>;
 
 export function AppLoadSettings():Promise<main.Settings>;

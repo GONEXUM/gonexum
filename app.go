@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -50,6 +51,33 @@ func (a *App) SelectDirectory(title string) (string, error) {
 		Title: title,
 	})
 	return path, err
+}
+
+// GetFileSize returns the size of a file in bytes
+func (a *App) GetFileSize(path string) (int64, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	return fi.Size(), nil
+}
+
+// ReadFileChunk reads a chunk of a file and returns it as base64-encoded string
+func (a *App) ReadFileChunk(path string, offset int64, size int64) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	if _, err := f.Seek(offset, 0); err != nil {
+		return "", err
+	}
+	buf := make([]byte, size)
+	n, err := f.Read(buf)
+	if err != nil && err.Error() != "EOF" {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(buf[:n]), nil
 }
 
 // ReadTextFile reads a text file and returns its content (max 1 MB)
