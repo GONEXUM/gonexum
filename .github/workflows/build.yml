@@ -138,6 +138,8 @@ jobs:
   release:
     name: Publish Release
     needs: [build-macos, build-windows, build-linux]
+    outputs:
+      tag: ${{ github.ref_name }}
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -196,3 +198,99 @@ jobs:
             1. Double-cliquez sur le `.exe`
             2. Cliquez sur **Informations complémentaires** dans l'avertissement SmartScreen
             3. Cliquez sur **Exécuter quand même**
+
+  virustotal:
+    name: VirusTotal Scan
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Upload files to VirusTotal
+        id: vt
+        env:
+          VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          upload_vt() {
+            local file="$1"
+            local label="$2"
+            local size
+            size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")
+            local upload_url="https://www.virustotal.com/api/v3/files"
+
+            # Files > 32 MB require a special large-file upload URL
+            if [ "$size" -gt 33554432 ]; then
+              upload_url=$(curl -s --request GET \
+                --url https://www.virustotal.com/api/v3/files/upload_url \
+                --header "x-apikey: $VT_API_KEY" | jq -r '.data // empty')
+              if [ -z "$upload_url" ]; then
+                echo "${label}=" >> "$GITHUB_OUTPUT"
+                return
+              fi
+            fi
+
+            local response
+            response=$(curl -s --request POST \
+              --url "$upload_url" \
+              --header "x-apikey: $VT_API_KEY" \
+              --form "file=@${file}")
+
+            local id
+            id=$(echo "$response" | jq -r '.data.id // empty')
+            if [ -n "$id" ]; then
+              echo "${label}=https://www.virustotal.com/gui/file-analysis/${id}" >> "$GITHUB_OUTPUT"
+            else
+              echo "VT upload failed for $label: $response" >&2
+              echo "${label}=" >> "$GITHUB_OUTPUT"
+            fi
+
+            # Free tier: 4 requests/min → wait 16 s between uploads
+            sleep 16
+          }
+
+          upload_vt "dist/GONEXUM-macos-amd64/GONEXUM-${TAG}-macos-amd64.zip"     "macos_amd64"
+          upload_vt "dist/GONEXUM-macos-arm64/GONEXUM-${TAG}-macos-arm64.zip"     "macos_arm64"
+          upload_vt "dist/GONEXUM-windows-amd64/GONEXUM-${TAG}-windows-amd64.exe" "windows_amd64"
+          upload_vt "dist/GONEXUM-linux-amd64/GONEXUM-${TAG}-linux-amd64.tar.gz"  "linux_amd64"
+
+      - name: Append VirusTotal section to release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          VT_MACOS_ARM64:   ${{ steps.vt.outputs.macos_arm64 }}
+          VT_MACOS_AMD64:   ${{ steps.vt.outputs.macos_amd64 }}
+          VT_WINDOWS:       ${{ steps.vt.outputs.windows_amd64 }}
+          VT_LINUX:         ${{ steps.vt.outputs.linux_amd64 }}
+        run: |
+          vt_row() {
+            local label="$1" url="$2"
+            if [ -n "$url" ]; then
+              echo "| $label | [Voir le rapport]($url) |"
+            else
+              echo "| $label | _(non disponible)_ |"
+            fi
+          }
+
+          current=$(gh release view "$TAG" --repo diabolino/gonexum-releases --json body -q .body)
+
+          {
+            printf '%s\n' "$current"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### VirusTotal"
+            echo ""
+            echo "| Fichier | Rapport |"
+            echo "|---|---|"
+            vt_row "macOS Apple Silicon (arm64)" "$VT_MACOS_ARM64"
+            vt_row "macOS Intel (amd64)"         "$VT_MACOS_AMD64"
+            vt_row "Windows 64-bit"              "$VT_WINDOWS"
+            vt_row "Linux 64-bit"                "$VT_LINUX"
+          } > /tmp/full_body.md
+
+          gh release edit "$TAG" --repo diabolino/gonexum-releases --notes-file /tmp/full_body.md
