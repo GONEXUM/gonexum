@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   SelectFile, SelectDirectory, CreateTorrent,
-  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile
+  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
+  AppLoadSettings,
 } from '../../wailsjs/go/main/App'
-import { getMediaInfoJS } from '../services/mediainfo'
+import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import './UploadPage.css'
@@ -103,6 +104,7 @@ export default function UploadPage() {
   // NFO
   const [nfoMode, setNfoMode] = useState<'generate' | 'existing'>('generate')
   const [nfoFilePath, setNfoFilePath] = useState('')
+  const [settingsNfoMode, setSettingsNfoMode] = useState<'nfo' | 'mediainfo'>('nfo')
 
   const [torrentProgress, setTorrentProgress] = useState<TorrentProgress | null>(null)
 
@@ -113,6 +115,9 @@ export default function UploadPage() {
     EventsOn('torrent:progress', (data: TorrentProgress) => {
       setTorrentProgress(data)
     })
+    AppLoadSettings().then(s => {
+      if (s.nfoMode === 'mediainfo') setSettingsNfoMode('mediainfo')
+    }).catch(() => {})
     return () => { EventsOff('torrent:progress') }
   }, [])
 
@@ -176,6 +181,14 @@ export default function UploadPage() {
         setAudioLangs(mi.audioLanguages || '')
         setHdrFormat(mi.hdrFormat || '')
         setSource(mi.source || '')
+        // Si le mode MediaInfo CLI est actif, pré-génère le contenu NFO
+        const currentSettings = await AppLoadSettings()
+        if (currentSettings.nfoMode === 'mediainfo') {
+          try {
+            const cliText = await getMediaInfoCLIText(videoPath)
+            setNfoContent(cliText)
+          } catch { /* non bloquant */ }
+        }
       } catch {
         setMediaInfo(null)
       }

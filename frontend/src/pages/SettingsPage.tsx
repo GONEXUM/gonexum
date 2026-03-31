@@ -89,6 +89,7 @@ export default function SettingsPage({ setupRequired, onSaved }: SettingsPagePro
     trackerUrl: 'https://nexum-core.com',
     outputDir: '',
     nfoTemplate: '',
+    nfoMode: 'nfo',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -327,6 +328,37 @@ export default function SettingsPage({ setupRequired, onSaved }: SettingsPagePro
         </div>
 
         <div className="settings-fields">
+          {/* Mode toggle */}
+          <div className="form-group">
+            <label className="label">Mode de contenu NFO</label>
+            <div className="nfo-mode-toggle">
+              <label className={`nfo-mode-option${settings.nfoMode !== 'mediainfo' ? ' nfo-mode-option--active' : ''}`}>
+                <input
+                  type="radio"
+                  name="nfoMode"
+                  value="nfo"
+                  checked={settings.nfoMode !== 'mediainfo'}
+                  onChange={() => set('nfoMode', 'nfo')}
+                />
+                <span>NFO</span>
+                <span className="nfo-mode-desc">Template personnalisé ou encadré ASCII par défaut</span>
+              </label>
+              <label className={`nfo-mode-option${settings.nfoMode === 'mediainfo' ? ' nfo-mode-option--active' : ''}`}>
+                <input
+                  type="radio"
+                  name="nfoMode"
+                  value="mediainfo"
+                  checked={settings.nfoMode === 'mediainfo'}
+                  onChange={() => set('nfoMode', 'mediainfo')}
+                />
+                <span>MediaInfo</span>
+                <span className="nfo-mode-desc">Sortie style <code>mediainfo</code> CLI</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Template editor — visible uniquement en mode NFO */}
+          {settings.nfoMode !== 'mediainfo' && <>
           {/* Variables reference */}
           <details className="nfo-vars-details">
             <summary className="nfo-vars-summary">Variables disponibles</summary>
@@ -403,6 +435,7 @@ export default function SettingsPage({ setupRequired, onSaved }: SettingsPagePro
               <pre className="nfo-preview">{nfoPreview}</pre>
             )}
           </div>
+          </>}
         </div>
       </section>
 

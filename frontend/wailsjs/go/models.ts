@@ -41,6 +41,7 @@ export namespace main {
 	    trackerUrl: string;
 	    outputDir: string;
 	    nfoTemplate: string;
+	    nfoMode: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -54,6 +55,7 @@ export namespace main {
 	        this.trackerUrl = source["trackerUrl"];
 	        this.outputDir = source["outputDir"];
 	        this.nfoTemplate = source["nfoTemplate"];
+	        this.nfoMode = source["nfoMode"];
 	    }
 	}
 	export class TMDBDetails {
