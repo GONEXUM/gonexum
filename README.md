@@ -1,6 +1,6 @@
 # GONEXUM
 
-Application desktop pour créer et uploader des torrents sur [nexum-core.com](https://nexum-core.com).
+Application desktop pour créer et uploader des torrents sur le tracker Nexum.
 
 ---
 
@@ -10,7 +10,7 @@ Application desktop pour créer et uploader des torrents sur [nexum-core.com](ht
 - **Analyse média** — extraction automatique des informations techniques (résolution, codec vidéo/audio, HDR, langues) sans dépendance externe via un parser Go natif (MKV, MP4)
 - **Recherche TMDB** — recherche automatique des métadonnées au lancement via le proxy [<TMDB_PROXY>](<TMDB_PROXY_URL>) (aucune clé API requise)
 - **Génération NFO** — création d'un fichier NFO formaté, ou import d'un fichier existant
-- **Upload** — envoi du torrent et du NFO directement vers l'API nexum-core.com
+- **Upload** — envoi du torrent et du NFO directement vers l'API du tracker
 
 ---
 
@@ -104,4 +104,4 @@ git push origin v1.x.x
 
 ## Licence
 
-Projet privé — usage réservé aux membres de nexum-core.com.
+Projet privé — usage réservé aux membres du tracker.
