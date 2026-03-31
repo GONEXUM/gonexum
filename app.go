@@ -12,7 +12,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-const AppVersion = "1.1.0"
+// AppVersion is set at build time via -ldflags "-X main.AppVersion=x.x.x"
+var AppVersion = "dev"
 
 // App struct
 type App struct {
