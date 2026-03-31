@@ -100,6 +100,30 @@
   margin-top: auto;
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: var(--color-accent-dim);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.update-badge:hover {
+  background: var(--color-accent);
+  color: #fff;
 }
 
 /* Main content */

@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
+
+const AppVersion = "1.1.0"
 
 // App struct
 type App struct {
@@ -70,4 +76,43 @@ func (a *App) AppLoadSettings() (Settings, error) {
 // AppSaveSettings saves the provided settings
 func (a *App) AppSaveSettings(s Settings) error {
 	return saveSettings(s)
+}
+
+// UpdateInfo holds the result of the update check
+type UpdateInfo struct {
+	Current   string `json:"current"`
+	Latest    string `json:"latest"`
+	Available bool   `json:"available"`
+	URL       string `json:"url"`
+}
+
+// CheckUpdate queries the GitHub Releases API and returns update info
+func (a *App) CheckUpdate() UpdateInfo {
+	info := UpdateInfo{Current: AppVersion}
+
+	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum/releases/latest")
+	if err != nil {
+		return info
+	}
+	defer resp.Body.Close()
+
+	var release struct {
+		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return info
+	}
+
+	latest := strings.TrimPrefix(release.TagName, "v")
+	info.Latest = latest
+	info.URL = release.HTMLURL
+	info.Available = latest != "" && latest != AppVersion
+
+	return info
+}
+
+// GetAppVersion returns the current app version
+func (a *App) GetAppVersion() string {
+	return fmt.Sprintf("v%s", AppVersion)
 }

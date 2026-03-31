@@ -34,6 +34,24 @@ export namespace main {
 	        this.frameRate = source["frameRate"];
 	    }
 	}
+	export class UpdateInfo {
+	    current: string;
+	    latest: string;
+	    available: boolean;
+	    url: string;
+
+	    static createFrom(source: any = {}) {
+	        return new UpdateInfo(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.current = source["current"];
+	        this.latest = source["latest"];
+	        this.available = source["available"];
+	        this.url = source["url"];
+	    }
+	}
 	export class Settings {
 	    apiKey: string;
 	    passkey: string;
