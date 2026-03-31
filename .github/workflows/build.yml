@@ -96,6 +96,7 @@ jobs:
         with:
           name: GONEXUM-windows-amd64-installer
           path: build/bin/GONEXUM-amd64-installer.exe
+          if-no-files-found: ignore
 
   release:
     name: Create Release
@@ -117,5 +118,5 @@ jobs:
             dist/GONEXUM-macos-amd64/GONEXUM-macos-amd64.zip
             dist/GONEXUM-macos-arm64/GONEXUM-macos-arm64.zip
             dist/GONEXUM-windows-amd64-exe/GONEXUM.exe
-            dist/GONEXUM-windows-amd64-installer/GONEXUM-amd64-installer.exe
+            dist/GONEXUM-windows-amd64-installer/GONEXUM-amd64-installer.exe*
           generate_release_notes: true
