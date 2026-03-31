@@ -97,24 +97,36 @@ jobs:
           if-no-files-found: ignore
 
   release:
-    name: Create Release
+    name: Publish Release
     needs: [build-macos, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
 
-      - name: Create GitHub Release
+      - name: Create Release on public repo
         uses: softprops/action-gh-release@v2
         with:
+          repository: diabolino/gonexum-releases
+          token: ${{ secrets.RELEASES_REPO_TOKEN }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           files: |
             dist/GONEXUM-macos-amd64/GONEXUM-macos-amd64.zip
             dist/GONEXUM-macos-arm64/GONEXUM-macos-arm64.zip
             dist/GONEXUM-windows-amd64-exe/GONEXUM.exe
             dist/GONEXUM-windows-amd64-installer/GONEXUM-amd64-installer.exe*
-          generate_release_notes: true
+          generate_release_notes: false
+          body: |
+            ## GONEXUM ${{ github.ref_name }}
+
+            ### Téléchargement
+
+            | Plateforme | Fichier |
+            |---|---|
+            | macOS Apple Silicon (M1/M2/M3) | `GONEXUM-macos-arm64.zip` |
+            | macOS Intel | `GONEXUM-macos-amd64.zip` |
+            | Windows 64-bit | `GONEXUM.exe` |
