@@ -90,7 +90,7 @@ type UpdateInfo struct {
 func (a *App) CheckUpdate() UpdateInfo {
 	info := UpdateInfo{Current: AppVersion}
 
-	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum-releases/releases/latest")
 	if err != nil {
 		return info
 	}
