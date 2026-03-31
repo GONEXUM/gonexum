@@ -10,6 +10,10 @@ export function GetFileSize(arg1) {
   return window['go']['main']['App']['GetFileSize'](arg1);
 }
 
+export function LargestVideoFile(arg1) {
+  return window['go']['main']['App']['LargestVideoFile'](arg1);
+}
+
 export function ReadFileChunk(arg1, arg2, arg3) {
   return window['go']['main']['App']['ReadFileChunk'](arg1, arg2, arg3);
 }
