@@ -3,11 +3,61 @@ package main
 import (
 	"fmt"
 	"strings"
+	"text/template"
 	"unicode/utf8"
 )
 
-// GenerateNFO generates the NFO file content
+// NFOTemplateData is passed to custom NFO templates
+type NFOTemplateData struct {
+	TMDB  TMDBDetails
+	Media MediaInfo
+}
+
+// nfoFuncMap exposes helper functions available inside custom templates
+var nfoFuncMap = template.FuncMap{
+	"padRight": func(s string, width int) string { return padRight(s, width) },
+	"center":   func(s string, width int) string { return center(s, width) },
+	"truncate": func(s string, max int) string { return truncate(s, max) },
+	"repeat":   strings.Repeat,
+	"join":     func(sep string, items []string) string { return strings.Join(items, sep) },
+	"printf":   fmt.Sprintf,
+}
+
+// renderCustomNFO parses and executes a user-defined text/template NFO template.
+func renderCustomNFO(tmpl string, data NFOTemplateData) (string, error) {
+	t, err := template.New("nfo").Funcs(nfoFuncMap).Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	if err := t.Execute(&sb, data); err != nil {
+		return "", err
+	}
+	return sb.String(), nil
+}
+
+// ValidateNFOTemplate parses a template string and returns any syntax error.
+func (a *App) ValidateNFOTemplate(tmpl string) error {
+	_, err := template.New("nfo").Funcs(nfoFuncMap).Parse(tmpl)
+	return err
+}
+
+// GenerateNFO generates the NFO file content.
+// If a custom NFOTemplate is saved in settings it is used; otherwise the built-in layout is applied.
 func (a *App) GenerateNFO(details TMDBDetails, media MediaInfo) string {
+	s, _ := loadSettings()
+	if s.NFOTemplate != "" {
+		result, err := renderCustomNFO(s.NFOTemplate, NFOTemplateData{TMDB: details, Media: media})
+		if err == nil {
+			return result
+		}
+		// Fall back to default on execution error
+	}
+	return generateDefaultNFO(details, media)
+}
+
+// generateDefaultNFO produces the built-in box-drawing NFO layout.
+func generateDefaultNFO(details TMDBDetails, media MediaInfo) string {
 	var sb strings.Builder
 
 	line := func(s string) { sb.WriteString(s + "\n") }

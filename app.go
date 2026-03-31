@@ -181,3 +181,35 @@ func (a *App) CheckUpdate() UpdateInfo {
 func (a *App) GetAppVersion() string {
 	return "v" + strings.TrimPrefix(AppVersion, "v")
 }
+
+// PreviewNFO renders a template string with sample data and returns the result.
+// If tmpl is empty, the built-in default layout is returned.
+func (a *App) PreviewNFO(tmpl string) (string, error) {
+	sample := NFOTemplateData{
+		TMDB: TMDBDetails{
+			ID:        550,
+			Title:     "Fight Club",
+			Year:      "1999",
+			Overview:  "Un insomniaque bureau-work et un vendeur de savon fondent un club de combat clandestin qui évolue en quelque chose de bien plus dangereux.",
+			Genres:    []string{"Drame", "Thriller"},
+			Director:  "David Fincher",
+			Rating:    8.4,
+			Runtime:   139,
+			MediaType: "movie",
+		},
+		Media: MediaInfo{
+			Resolution:     "1080p",
+			VideoCodec:     "x264",
+			AudioCodec:     "DTS",
+			AudioLanguages: "Français, Anglais",
+			HDRFormat:      "",
+			Source:         "BluRay",
+			Duration:       "2h 19min",
+			FrameRate:      23.976,
+		},
+	}
+	if tmpl == "" {
+		return generateDefaultNFO(sample.TMDB, sample.Media), nil
+	}
+	return renderCustomNFO(tmpl, sample)
+}
