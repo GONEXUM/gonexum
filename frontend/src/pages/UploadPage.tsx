@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   SelectFile, SelectDirectory, CreateTorrent,
-  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, ReadTextFile
+  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, ReadTextFile, LargestVideoFile
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS } from '../services/mediainfo'
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
@@ -164,14 +164,10 @@ export default function UploadPage() {
       setTorrent(t)
       setName(t.name)
 
-      // Try to extract media info (from file or first video in folder)
+      // Try to extract media info (from file or largest video in folder)
       setLoadingMsg('Extraction des informations médias...')
-      let videoPath = sourcePath
-      if (isDir) {
-        // Will try the path directly; ffprobe will fail on dirs but we handle it
-        videoPath = sourcePath
-      }
       try {
+        const videoPath = await LargestVideoFile(sourcePath)
         const mi = await getMediaInfoJS(videoPath)
         setMediaInfo(mi as any)
         setResolution(mi.resolution || '')
@@ -438,7 +434,7 @@ export default function UploadPage() {
               {!mediaInfo && (
                 <div className="alert alert-warning" style={{ marginBottom: 16 }}>
                   <span>ℹ</span>
-                  <span>ffprobe non disponible. Renseignez les informations manuellement.</span>
+                  <span>Analyse automatique indisponible. Renseignez les informations manuellement.</span>
                 </div>
               )}
 

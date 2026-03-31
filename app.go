@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -51,6 +53,40 @@ func (a *App) SelectDirectory(title string) (string, error) {
 		Title: title,
 	})
 	return path, err
+}
+
+var videoExts = map[string]bool{
+	".mkv": true, ".mp4": true, ".avi": true, ".mov": true,
+	".ts": true, ".m2ts": true, ".wmv": true, ".m4v": true,
+}
+
+// LargestVideoFile returns the path of the largest video file in a directory,
+// or the path itself if it's already a file.
+func (a *App) LargestVideoFile(path string) (string, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if !fi.IsDir() {
+		return path, nil
+	}
+	var best string
+	var bestSize int64
+	filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(p))
+		if videoExts[ext] && info.Size() > bestSize {
+			bestSize = info.Size()
+			best = p
+		}
+		return nil
+	})
+	if best == "" {
+		return "", fmt.Errorf("aucun fichier vidéo trouvé dans le dossier")
+	}
+	return best, nil
 }
 
 // GetFileSize returns the size of a file in bytes
