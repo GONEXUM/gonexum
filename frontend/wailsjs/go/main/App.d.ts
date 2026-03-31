@@ -12,7 +12,7 @@ export function CreateTorrent(arg1:string):Promise<main.TorrentResult>;
 
 export function DownloadTorrent(arg1:number):Promise<string>;
 
-export function GenerateNFO(arg1:main.TMDBDetails,arg2:main.MediaInfo):Promise<string>;
+export function GenerateNFO(arg1:main.TMDBDetails,arg2:main.MediaInfo,arg3:string):Promise<string>;
 
 export function GetAppVersion():Promise<string>;
 

@@ -9,8 +9,9 @@ import (
 
 // NFOTemplateData is passed to custom NFO templates
 type NFOTemplateData struct {
-	TMDB  TMDBDetails
-	Media MediaInfo
+	TMDB         TMDBDetails
+	Media        MediaInfo
+	MediaInfoCLI string // sortie complète style mediainfo CLI
 }
 
 // nfoFuncMap exposes helper functions available inside custom templates
@@ -44,10 +45,11 @@ func (a *App) ValidateNFOTemplate(tmpl string) error {
 
 // GenerateNFO generates the NFO file content.
 // If a custom NFOTemplate is saved in settings it is used; otherwise the built-in layout is applied.
-func (a *App) GenerateNFO(details TMDBDetails, media MediaInfo) string {
+// mediaInfoCLI is the optional full CLI-style mediainfo text, available as {{.MediaInfoCLI}} in templates.
+func (a *App) GenerateNFO(details TMDBDetails, media MediaInfo, mediaInfoCLI string) string {
 	s, _ := loadSettings()
 	if s.NFOTemplate != "" {
-		result, err := renderCustomNFO(s.NFOTemplate, NFOTemplateData{TMDB: details, Media: media})
+		result, err := renderCustomNFO(s.NFOTemplate, NFOTemplateData{TMDB: details, Media: media, MediaInfoCLI: mediaInfoCLI})
 		if err == nil {
 			return result
 		}

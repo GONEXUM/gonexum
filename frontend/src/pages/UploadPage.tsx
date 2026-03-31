@@ -105,6 +105,7 @@ export default function UploadPage() {
   const [nfoMode, setNfoMode] = useState<'generate' | 'existing'>('generate')
   const [nfoFilePath, setNfoFilePath] = useState('')
   const [settingsNfoMode, setSettingsNfoMode] = useState<'nfo' | 'mediainfo'>('nfo')
+  const [mediaInfoCLIText, setMediaInfoCLIText] = useState('')
 
   const [torrentProgress, setTorrentProgress] = useState<TorrentProgress | null>(null)
 
@@ -182,13 +183,14 @@ export default function UploadPage() {
         setHdrFormat(mi.hdrFormat || '')
         setSource(mi.source || '')
         // Si le mode MediaInfo CLI est actif, pré-génère le contenu NFO
-        const currentSettings = await AppLoadSettings()
-        if (currentSettings.nfoMode === 'mediainfo') {
-          try {
-            const cliText = await getMediaInfoCLIText(videoPath)
+        try {
+          const cliText = await getMediaInfoCLIText(videoPath)
+          setMediaInfoCLIText(cliText)
+          const currentSettings = await AppLoadSettings()
+          if (currentSettings.nfoMode === 'mediainfo') {
             setNfoContent(cliText)
-          } catch { /* non bloquant */ }
-        }
+          }
+        } catch { /* non bloquant */ }
       } catch {
         setMediaInfo(null)
       }
@@ -245,7 +247,7 @@ export default function UploadPage() {
       setTmdbType(result.mediaType)
       if (result.mediaType === 'tv') setCategoryId(2)
       else setCategoryId(1)
-      const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo)
+      const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       setNfoContent(nfo)
       setShowTmdbAlternatives(false)
     } catch (e) { err(e) }
@@ -271,7 +273,7 @@ export default function UploadPage() {
       setTmdbType(type)
       if (type === 'tv') setCategoryId(2)
       else setCategoryId(1)
-      const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo)
+      const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       setNfoContent(nfo)
       setTmdbSearchStatus('found')
       setShowTmdbAlternatives(false)
@@ -294,7 +296,7 @@ export default function UploadPage() {
     if (!name) { setError('Veuillez renseigner le nom du torrent.'); return }
     if (!nfoContent) {
       // Generate a minimal NFO
-      GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo)
+      GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
         .then(nfo => setNfoContent(nfo))
     }
     setError('')
@@ -309,7 +311,7 @@ export default function UploadPage() {
     setLoadingMsg('Upload en cours...')
     setError('')
     try {
-      const nfo = nfoContent || await GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo)
+      const nfo = nfoContent || await GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,
