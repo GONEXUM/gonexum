@@ -1,0 +1,121 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build (macOS ${{ matrix.arch }})
+        run: wails build -platform darwin/${{ matrix.arch }} -o GONEXUM
+        env:
+          CGO_ENABLED: "1"
+
+      - name: Package .app as zip
+        run: |
+          cd build/bin
+          zip -r GONEXUM-macos-${{ matrix.arch }}.zip GONEXUM.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GONEXUM-macos-${{ matrix.arch }}
+          path: build/bin/GONEXUM-macos-${{ matrix.arch }}.zip
+
+  build-windows:
+    name: Build Windows (amd64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install NSIS (installer)
+        run: choco install nsis -y
+        shell: pwsh
+
+      - name: Build (Windows amd64)
+        run: wails build -platform windows/amd64 -nsis -o GONEXUM.exe
+        env:
+          CGO_ENABLED: "1"
+
+      - name: Upload artifact (exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GONEXUM-windows-amd64-exe
+          path: build/bin/GONEXUM.exe
+
+      - name: Upload artifact (installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GONEXUM-windows-amd64-installer
+          path: build/bin/GONEXUM-amd64-installer.exe
+
+  release:
+    name: Create Release
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/GONEXUM-macos-amd64/GONEXUM-macos-amd64.zip
+            dist/GONEXUM-macos-arm64/GONEXUM-macos-arm64.zip
+            dist/GONEXUM-windows-amd64-exe/GONEXUM.exe
+            dist/GONEXUM-windows-amd64-installer/GONEXUM-amd64-installer.exe
+          generate_release_notes: true
