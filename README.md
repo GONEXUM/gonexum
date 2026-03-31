@@ -8,7 +8,7 @@ Application desktop pour créer et uploader des torrents sur le tracker Nexum.
 
 - **Création de torrent** — génère un `.torrent` privé à partir d'un fichier ou d'un dossier, avec barre de progression en temps réel
 - **Analyse média** — extraction automatique des informations techniques (résolution, codec vidéo/audio, HDR, langues) sans dépendance externe via un parser Go natif (MKV, MP4)
-- **Recherche TMDB** — recherche automatique des métadonnées au lancement via le proxy [tmdb.uklm.xyz](https://tmdb.uklm.xyz) (aucune clé API requise)
+- **Recherche TMDB** — recherche automatique des métadonnées au lancement via un proxy interne (aucune clé API requise)
 - **Génération NFO** — création d'un fichier NFO formaté, ou import d'un fichier existant
 - **Upload** — envoi du torrent et du NFO directement vers l'API du tracker
 
