@@ -48,14 +48,11 @@ jobs:
         env:
           CGO_ENABLED: "1"
 
-      - name: Bundle ffprobe into .app
+      - name: Package .app + ffprobe as zip
         run: |
-          cp ffprobe build/bin/GONEXUM.app/Contents/MacOS/ffprobe
-
-      - name: Package .app as zip
-        run: |
+          cp ffprobe build/bin/ffprobe
           cd build/bin
-          zip -r GONEXUM-macos-${{ matrix.arch }}.zip GONEXUM.app
+          zip -r GONEXUM-macos-${{ matrix.arch }}.zip GONEXUM.app ffprobe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
