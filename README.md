@@ -1,19 +1,107 @@
-# README
+# GONEXUM
 
-## About
+Application desktop pour créer et uploader des torrents sur [nexum-core.com](https://nexum-core.com).
 
-This is the official Wails React-TS template.
+---
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## Fonctionnalités
 
-## Live Development
+- **Création de torrent** — génère un `.torrent` privé à partir d'un fichier ou d'un dossier, avec barre de progression en temps réel
+- **Analyse média** — extraction automatique des informations techniques (résolution, codec vidéo/audio, HDR, langues) sans dépendance externe via un parser Go natif (MKV, MP4)
+- **Recherche TMDB** — recherche automatique des métadonnées au lancement via le proxy [<TMDB_PROXY>](<TMDB_PROXY_URL>) (aucune clé API requise)
+- **Génération NFO** — création d'un fichier NFO formaté, ou import d'un fichier existant
+- **Upload** — envoi du torrent et du NFO directement vers l'API nexum-core.com
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+---
 
-## Building
+## Téléchargement
 
-To build a redistributable, production mode package, use `wails build`.
+Les binaires compilés sont disponibles dans les [Releases GitHub](https://github.com/diabolino/gonexum/releases).
+
+| Plateforme | Fichier |
+|---|---|
+| macOS Apple Silicon (M1/M2/M3) | `GONEXUM-macos-arm64.zip` |
+| macOS Intel | `GONEXUM-macos-amd64.zip` |
+| Windows 64-bit | `GONEXUM.exe` |
+
+---
+
+## Utilisation
+
+### 1. Configuration
+
+Au premier lancement, rendez-vous dans **Paramètres** et renseignez :
+
+- **URL du tracker** — l'URL de base de nexum-core.com
+- **Clé API** — votre clé API personnelle
+- **Passkey** — votre passkey pour l'annonce du tracker
+- **Dossier de sortie** — répertoire où seront enregistrés les fichiers `.torrent` générés
+
+### 2. Workflow d'upload
+
+L'application guide l'upload en 4 étapes :
+
+**Étape 1 — Source**
+Sélectionnez un fichier vidéo ou un dossier. Le torrent est créé automatiquement. Pour les dossiers, le fichier vidéo le plus volumineux est analysé.
+
+**Étape 2 — Média**
+Les informations techniques sont extraites automatiquement. Elles peuvent être corrigées manuellement si nécessaire.
+
+**Étape 3 — Métadonnées**
+La recherche TMDB se lance automatiquement. Si le premier résultat ne correspond pas, vous pouvez :
+- Rechercher manuellement par nom
+- Coller directement un lien `themoviedb.org/movie/...` ou `themoviedb.org/tv/...`
+
+Pour le NFO, deux options : génération automatique à partir des données TMDB, ou import d'un fichier `.nfo` existant.
+
+**Étape 4 — Upload**
+Vérifiez le récapitulatif, ajoutez une description optionnelle, puis uploadez.
+
+---
+
+## Compilation depuis les sources
+
+### Prérequis
+
+- [Go 1.24+](https://go.dev/dl/)
+- [Node.js 20+](https://nodejs.org/)
+- [Wails v2](https://wails.io/docs/gettingstarted/installation)
+
+```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+```
+
+### Lancer en mode développement
+
+```bash
+wails dev
+```
+
+### Compiler
+
+```bash
+# macOS
+wails build -platform darwin/arm64
+
+# Windows
+wails build -platform windows/amd64
+```
+
+---
+
+## CI/CD
+
+Chaque push sur le dépôt déclenche automatiquement la compilation pour macOS (arm64 + amd64) et Windows via GitHub Actions.
+
+Pour publier une nouvelle release avec les binaires en pièces jointes :
+
+```bash
+git tag v1.x.x
+git push origin v1.x.x
+```
+
+---
+
+## Licence
+
+Projet privé — usage réservé aux membres de nexum-core.com.
