@@ -98,15 +98,21 @@ type ffprobeFormat struct {
 	BitRate  string `json:"bit_rate"`
 }
 
-// ffprobePath returns the path to ffprobe: bundled next to the executable first, then PATH
+// ffprobePath returns the path to ffprobe.
+// Lookup order:
+//  1. Next to the executable (Windows, Linux)
+//  2. Next to the .app bundle (macOS: exe is inside .app/Contents/MacOS/, ffprobe sits alongside .app)
+//  3. PATH fallback
 func ffprobePath() string {
 	exe, err := os.Executable()
 	if err == nil {
 		dir := filepath.Dir(exe)
-		// macOS .app bundle: Contents/MacOS/ffprobe
 		candidates := []string{
+			// Windows / Linux: ffprobe next to exe
 			filepath.Join(dir, "ffprobe"),
 			filepath.Join(dir, "ffprobe.exe"),
+			// macOS: exe = .app/Contents/MacOS/GONEXUM → go up 3 levels to reach folder containing .app
+			filepath.Join(dir, "..", "..", "..", "ffprobe"),
 		}
 		for _, p := range candidates {
 			if _, err := os.Stat(p); err == nil {
