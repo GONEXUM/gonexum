@@ -88,6 +88,7 @@ export default function SettingsPage({ setupRequired, onSaved }: SettingsPagePro
     tmdbApiKey: '',
     trackerUrl: 'https://nexum-core.com',
     outputDir: '',
+    nfoTemplate: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
