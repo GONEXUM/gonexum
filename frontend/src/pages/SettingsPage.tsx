@@ -15,9 +15,6 @@ const NFO_VARIABLES = [
     { name: '.TMDB.ID',       desc: 'ID TMDB' },
     { name: '.TMDB.MediaType',desc: 'movie / tv' },
   ]},
-  { group: 'MediaInfo', vars: [
-    { name: '.MediaInfoCLI', desc: 'Sortie complète style mediainfo CLI' },
-  ]},
   { group: 'Média', vars: [
     { name: '.Media.Resolution',     desc: 'Résolution' },
     { name: '.Media.VideoCodec',     desc: 'Codec vidéo' },
@@ -27,6 +24,9 @@ const NFO_VARIABLES = [
     { name: '.Media.Source',         desc: 'Source (BluRay…)' },
     { name: '.Media.Duration',       desc: 'Durée formatée' },
     { name: '.Media.FrameRate',      desc: 'FPS (float)' },
+  ]},
+  { group: 'MediaInfo', vars: [
+    { name: '.MediaInfoCLI', desc: 'Sortie complète style mediainfo CLI' },
   ]},
 ]
 
