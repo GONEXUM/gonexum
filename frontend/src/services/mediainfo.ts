@@ -132,6 +132,153 @@ function guessSource(filePath: string): string {
   return ''
 }
 
+// ---------------------------------------------------------------------------
+// CLI-style formatter
+// ---------------------------------------------------------------------------
+
+function fmtField(label: string, value: string): string {
+  if (!value) return ''
+  const pad = 40
+  const labelPadded = label.padEnd(pad, ' ')
+  return `${labelPadded}: ${value}\n`
+}
+
+function fmtBytes(bytes: number): string {
+  if (!bytes) return ''
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
+  let v = bytes
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
+  return `${v.toFixed(i > 0 ? 2 : 0)} ${units[i]} (${bytes.toLocaleString('en-US')} bytes)`
+}
+
+function fmtDuration(seconds: number): string {
+  if (!seconds) return ''
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  const ms = Math.round((seconds % 1) * 1000)
+  const parts = []
+  if (h) parts.push(`${h} h`)
+  if (m) parts.push(`${m} min`)
+  if (s || ms) parts.push(`${s} s ${String(ms).padStart(3, '0')} ms`)
+  return parts.join(' ')
+}
+
+function fmtBitrate(bps: number): string {
+  if (!bps) return ''
+  if (bps >= 1_000_000) return `${(bps / 1_000_000).toFixed(1)} Mb/s`
+  if (bps >= 1_000) return `${(bps / 1_000).toFixed(0)} kb/s`
+  return `${bps} b/s`
+}
+
+function buildGeneralSection(g: any): string {
+  let out = 'General\n'
+  out += fmtField('Complete name', g.CompleteName ?? g.FileName ?? '')
+  out += fmtField('Format', g.Format ?? '')
+  out += fmtField('Format version', g.Format_Version ?? '')
+  const fs = parseInt(g.FileSize ?? '0')
+  if (fs) out += fmtField('File size', fmtBytes(fs))
+  const dur = parseFloat(g.Duration ?? '0')
+  if (dur) out += fmtField('Duration', fmtDuration(dur))
+  out += fmtField('Overall bit rate mode', g.OverallBitRate_Mode ?? '')
+  const br = parseInt(g.OverallBitRate ?? '0')
+  if (br) out += fmtField('Overall bit rate', fmtBitrate(br))
+  out += fmtField('Frame rate', g.FrameRate ? `${parseFloat(g.FrameRate).toFixed(3)} FPS` : '')
+  out += fmtField('Writing application', g.Encoded_Application ?? '')
+  out += fmtField('Writing library', g.Encoded_Library ?? '')
+  return out
+}
+
+function buildVideoSection(v: any, idx: number): string {
+  const label = idx > 0 ? `Video #${idx + 1}` : 'Video'
+  let out = `\n${label}\n`
+  out += fmtField('ID', v.ID ?? '')
+  out += fmtField('Format', v.Format ?? '')
+  out += fmtField('Format/Info', v.Format_Info ?? '')
+  out += fmtField('Format profile', v.Format_Profile ?? '')
+  out += fmtField('HDR format', v.HDR_Format ?? '')
+  out += fmtField('HDR format compatibility', v.HDR_Format_Compatibility ?? '')
+  out += fmtField('Codec ID', v.CodecID ?? '')
+  const dur = parseFloat(v.Duration ?? '0')
+  if (dur) out += fmtField('Duration', fmtDuration(dur))
+  const br = parseInt(v.BitRate ?? '0')
+  if (br) out += fmtField('Bit rate', fmtBitrate(br))
+  const w = parseInt(v.Width ?? '0')
+  const h = parseInt(v.Height ?? '0')
+  if (w) out += fmtField('Width', `${w.toLocaleString('en-US')} pixels`)
+  if (h) out += fmtField('Height', `${h.toLocaleString('en-US')} pixels`)
+  out += fmtField('Display aspect ratio', v.DisplayAspectRatio_String ?? v.DisplayAspectRatio ?? '')
+  out += fmtField('Frame rate mode', v.FrameRate_Mode ?? '')
+  if (v.FrameRate) {
+    const fps = parseFloat(v.FrameRate)
+    const orig = v.FrameRate_Original ? ` (${v.FrameRate_Original})` : ''
+    out += fmtField('Frame rate', `${fps.toFixed(3)}${orig} FPS`)
+  }
+  out += fmtField('Color space', v.ColorSpace ?? '')
+  out += fmtField('Chroma subsampling', v.ChromaSubsampling ?? '')
+  out += fmtField('Bit depth', v.BitDepth ? `${v.BitDepth} bits` : '')
+  out += fmtField('Scan type', v.ScanType ?? '')
+  out += fmtField('Writing library', v.Encoded_Library ?? '')
+  return out
+}
+
+function buildAudioSection(a: any, idx: number): string {
+  const label = idx > 0 ? `Audio #${idx + 1}` : 'Audio'
+  let out = `\n${label}\n`
+  out += fmtField('ID', a.ID ?? '')
+  out += fmtField('Format', a.Format ?? '')
+  out += fmtField('Format profile', a.Format_Profile ?? '')
+  out += fmtField('Format settings', a.Format_Settings ?? '')
+  out += fmtField('Codec ID', a.CodecID ?? '')
+  const dur = parseFloat(a.Duration ?? '0')
+  if (dur) out += fmtField('Duration', fmtDuration(dur))
+  out += fmtField('Bit rate mode', a.BitRate_Mode ?? '')
+  const br = parseInt(a.BitRate ?? '0')
+  if (br) out += fmtField('Bit rate', fmtBitrate(br))
+  out += fmtField('Channel(s)', a.Channels ? `${a.Channels} channel${parseInt(a.Channels) > 1 ? 's' : ''}` : '')
+  out += fmtField('Channel layout', a.ChannelLayout ?? '')
+  out += fmtField('Sampling rate', a.SamplingRate ? `${(parseInt(a.SamplingRate) / 1000).toFixed(1)} kHz` : '')
+  out += fmtField('Frame rate', a.FrameRate ? `${parseFloat(a.FrameRate).toFixed(3)} FPS` : '')
+  out += fmtField('Bit depth', a.BitDepth ? `${a.BitDepth} bits` : '')
+  out += fmtField('Compression mode', a.Compression_Mode ?? '')
+  out += fmtField('Language', (a.Language_String ?? normalizeLang(a.Language ?? '')) || '')
+  out += fmtField('Default', a.Default ?? '')
+  out += fmtField('Forced', a.Forced ?? '')
+  return out
+}
+
+function buildTextSection(t: any, idx: number): string {
+  const label = idx > 0 ? `Text #${idx + 1}` : 'Text'
+  let out = `\n${label}\n`
+  out += fmtField('ID', t.ID ?? '')
+  out += fmtField('Format', t.Format ?? '')
+  out += fmtField('Codec ID', t.CodecID ?? '')
+  out += fmtField('Language', (t.Language_String ?? normalizeLang(t.Language ?? '')) || '')
+  out += fmtField('Default', t.Default ?? '')
+  out += fmtField('Forced', t.Forced ?? '')
+  return out
+}
+
+export async function getMediaInfoCLIText(filePath: string): Promise<string> {
+  const result = await analyzeFile(filePath)
+  const tracks: any[] = result?.media?.track ?? []
+
+  const general = tracks.find((t: any) => t['@type'] === 'General') ?? {}
+  const videoTracks = tracks.filter((t: any) => t['@type'] === 'Video')
+  const audioTracks = tracks.filter((t: any) => t['@type'] === 'Audio')
+  const textTracks = tracks.filter((t: any) => t['@type'] === 'Text')
+
+  let out = buildGeneralSection(general)
+  videoTracks.forEach((v, i) => { out += buildVideoSection(v, i) })
+  audioTracks.forEach((a, i) => { out += buildAudioSection(a, i) })
+  textTracks.forEach((t, i) => { out += buildTextSection(t, i) })
+
+  return out.trimEnd() + '\n'
+}
+
+// ---------------------------------------------------------------------------
+
 export async function getMediaInfoJS(filePath: string): Promise<ParsedMediaInfo> {
   const result = await analyzeFile(filePath)
   const tracks: any[] = result?.media?.track ?? []

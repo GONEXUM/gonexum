@@ -97,4 +97,5 @@ type Settings struct {
 	TrackerURL  string `json:"trackerUrl"`
 	OutputDir   string `json:"outputDir"`
 	NFOTemplate string `json:"nfoTemplate"`
+	NFOMode     string `json:"nfoMode"` // "nfo" (défaut) ou "mediainfo"
 }
