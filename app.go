@@ -182,10 +182,54 @@ func (a *App) GetAppVersion() string {
 	return "v" + strings.TrimPrefix(AppVersion, "v")
 }
 
+const sampleMediaInfoCLI = `General
+Complete name                            : Fight.Club.1999.1080p.BluRay.DTS.x264.mkv
+Format                                   : Matroska
+File size                                : 13.5 GiB (14 508 478 464 bytes)
+Duration                                 : 2 h 19 min 0 s 000 ms
+Overall bit rate                         : 13.8 Mb/s
+Frame rate                               : 23.976 FPS
+
+Video
+ID                                       : 1
+Format                                   : AVC
+Format/Info                              : Advanced Video Codec
+Format profile                           : High@L4.1
+Codec ID                                 : V_MPEG4/ISO/AVC
+Duration                                 : 2 h 19 min 0 s 000 ms
+Bit rate                                 : 12.0 Mb/s
+Width                                    : 1 920 pixels
+Height                                   : 1 080 pixels
+Display aspect ratio                     : 16:9
+Frame rate mode                          : Constant
+Frame rate                               : 23.976 FPS
+Color space                              : YUV
+Chroma subsampling                       : 4:2:0
+Bit depth                                : 8 bits
+Scan type                                : Progressive
+
+Audio
+ID                                       : 2
+Format                                   : DTS
+Format profile                           : Core
+Codec ID                                 : A_DTS
+Duration                                 : 2 h 19 min 0 s 000 ms
+Bit rate mode                            : Constant
+Bit rate                                 : 1.5 Mb/s
+Channel(s)                               : 6 channels
+Channel layout                           : C L R Ls Rs LFE
+Sampling rate                            : 48.0 kHz
+Bit depth                                : 24 bits
+Language                                 : Anglais
+Default                                  : Yes
+Forced                                   : No`
+
 // PreviewNFO renders a template string with sample data and returns the result.
 // If tmpl is empty, the built-in default layout is returned.
+// Sample MediaInfoCLI text is injected so {{.MediaInfoCLI}} can be previewed.
 func (a *App) PreviewNFO(tmpl string) (string, error) {
 	sample := NFOTemplateData{
+		MediaInfoCLI: sampleMediaInfoCLI,
 		TMDB: TMDBDetails{
 			ID:        550,
 			Title:     "Fight Club",

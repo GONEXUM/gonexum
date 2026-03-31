@@ -22,8 +22,8 @@ export function DownloadTorrent(arg1) {
   return window['go']['main']['App']['DownloadTorrent'](arg1);
 }
 
-export function GenerateNFO(arg1, arg2) {
-  return window['go']['main']['App']['GenerateNFO'](arg1, arg2);
+export function GenerateNFO(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GenerateNFO'](arg1, arg2, arg3);
 }
 
 export function GetAppVersion() {
