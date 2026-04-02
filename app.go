@@ -47,6 +47,22 @@ func (a *App) SelectFile(title string, filterName string, filterPattern string) 
 	return path, err
 }
 
+// SelectFiles opens a native multi-select file dialog and returns the selected paths
+func (a *App) SelectFiles(title string, filterName string, filterPattern string) ([]string, error) {
+	filters := []runtime.FileFilter{}
+	if filterName != "" && filterPattern != "" {
+		filters = append(filters, runtime.FileFilter{
+			DisplayName: filterName,
+			Pattern:     filterPattern,
+		})
+	}
+	paths, err := runtime.OpenMultipleFilesDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:   title,
+		Filters: filters,
+	})
+	return paths, err
+}
+
 // SelectDirectory opens a native directory dialog and returns the selected path
 func (a *App) SelectDirectory(title string) (string, error) {
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{

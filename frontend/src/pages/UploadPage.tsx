@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  SelectFile, SelectDirectory, CreateTorrent,
+  SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
   AppLoadSettings,
 } from '../../wailsjs/go/main/App'
@@ -8,6 +8,30 @@ import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import './UploadPage.css'
+
+// ─── Queue types ────────────────────────────────────────────────────────────
+
+type QueueItemStatus = 'pending' | 'processing' | 'done' | 'error'
+
+interface QueueItem {
+  id: string
+  path: string
+  name: string
+  status: QueueItemStatus
+  step?: string
+  error?: string
+  uploadResult?: main.UploadResponse
+}
+
+let _queueIdCounter = 0
+function makeQueueItem(path: string): QueueItem {
+  return {
+    id: String(++_queueIdCounter),
+    path,
+    name: path.split(/[/\\]/).pop() ?? path,
+    status: 'pending',
+  }
+}
 
 interface TorrentProgress {
   phase: 'start' | 'hashing' | 'writing'
@@ -112,6 +136,30 @@ export default function UploadPage() {
   const dropRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState(false)
 
+  // ── Queue state ──────────────────────────────────────────────────────────
+  const [pageMode, setPageMode] = useState<'single' | 'queue'>('single')
+  const [queue, setQueue] = useState<QueueItem[]>([])
+  const [queueRunning, setQueueRunning] = useState(false)
+  const [queueDragging, setQueueDragging] = useState(false)
+  const queueRunningRef = useRef(false)
+  const pageModeRef = useRef<'single' | 'queue'>('single')
+
+  const updateItem = useCallback((id: string, patch: Partial<QueueItem>) => {
+    setQueue(q => q.map(item => item.id === id ? { ...item, ...patch } : item))
+  }, [])
+
+  const addPathsToQueue = useCallback((paths: string[]) => {
+    setQueue(q => {
+      const existing = new Set(q.map(i => i.path))
+      const news = paths.filter(p => !existing.has(p)).map(makeQueueItem)
+      return [...q, ...news]
+    })
+  }, [])
+
+  useEffect(() => {
+    pageModeRef.current = pageMode
+  }, [pageMode])
+
   useEffect(() => {
     EventsOn('torrent:progress', (data: TorrentProgress) => {
       setTorrentProgress(data)
@@ -121,15 +169,107 @@ export default function UploadPage() {
     }).catch(() => {})
     OnFileDrop((_x, _y, paths) => {
       if (paths.length === 0) return
-      setSourcePath(paths[0])
-      setIsDir(false)
-      setError('')
+      if (pageModeRef.current === 'queue') {
+        addPathsToQueue(paths)
+      } else {
+        setSourcePath(paths[0])
+        setIsDir(false)
+        setError('')
+      }
     }, true)
     return () => {
       EventsOff('torrent:progress')
       OnFileDropOff()
     }
-  }, [])
+  }, [addPathsToQueue])
+
+  // ── Queue processor ──────────────────────────────────────────────────────
+
+  const processQueueItem = async (item: QueueItem, nfoMode: string) => {
+    const upd = (patch: Partial<QueueItem>) => updateItem(item.id, patch)
+    upd({ status: 'processing', error: undefined })
+    try {
+      upd({ step: 'Création du torrent…' })
+      const torrent = await CreateTorrent(item.path)
+
+      upd({ step: 'Analyse média…', name: torrent.name })
+      let mi: main.MediaInfo = {} as main.MediaInfo
+      let cliText = ''
+      try {
+        const videoPath = await LargestVideoFile(item.path)
+        const parsed = await getMediaInfoJS(videoPath)
+        mi = parsed as any
+        try { cliText = await getMediaInfoCLIText(videoPath) } catch { /* */ }
+      } catch { /* non bloquant */ }
+
+      upd({ step: 'Recherche TMDB…' })
+      let tmdb: main.TMDBDetails = {} as main.TMDBDetails
+      let catId = 1
+      let tmdbType = 'movie'
+      try {
+        const results = await SearchTMDB(torrent.name, '')
+        if (results && results.length > 0) {
+          const details = await GetTMDBDetails(results[0].id, results[0].mediaType)
+          tmdb = details
+          tmdbType = results[0].mediaType
+          catId = tmdbType === 'tv' ? 2 : 1
+        }
+      } catch { /* non bloquant */ }
+
+      upd({ step: 'Génération NFO…' })
+      let nfo = ''
+      if (nfoMode === 'mediainfo' && cliText) {
+        nfo = cliText
+      } else {
+        nfo = await GenerateNFO(tmdb, mi, cliText)
+      }
+
+      upd({ step: 'Upload…' })
+      const result = await UploadTorrent({
+        torrentPath: torrent.filePath,
+        nfoContent: nfo,
+        name: torrent.name,
+        categoryId: catId,
+        description: '',
+        tmdbId: tmdb.id || 0,
+        tmdbType,
+        resolution: (mi as any).resolution || '',
+        videoCodec: (mi as any).videoCodec || '',
+        audioCodec: (mi as any).audioCodec || '',
+        audioLanguages: (mi as any).audioLanguages || '',
+        hdrFormat: (mi as any).hdrFormat || '',
+        source: (mi as any).source || '',
+      })
+
+      if (result.torrent_id) {
+        try { await DownloadTorrent(result.torrent_id) } catch { /* */ }
+      }
+
+      upd({ status: 'done', step: undefined, uploadResult: result, name: torrent.name })
+    } catch (e) {
+      upd({ status: 'error', step: undefined, error: String(e) })
+    }
+  }
+
+  const startQueue = async () => {
+    if (queueRunningRef.current) return
+    queueRunningRef.current = true
+    setQueueRunning(true)
+    const settings = await AppLoadSettings().catch(() => ({ nfoMode: 'nfo' }))
+    // snapshot pending items at start
+    const pending = queue.filter(i => i.status === 'pending')
+    for (const item of pending) {
+      if (!queueRunningRef.current) break
+      await processQueueItem(item, settings.nfoMode)
+    }
+    queueRunningRef.current = false
+    setQueueRunning(false)
+  }
+
+  const stopQueue = () => {
+    queueRunningRef.current = false
+    setQueueRunning(false)
+  }
 
   const err = (e: unknown) => {
     const msg = e instanceof Error ? e.message : String(e)
@@ -369,13 +509,50 @@ export default function UploadPage() {
           <h1 className="page-title">Uploader un Torrent</h1>
           <p className="page-subtitle text-secondary">Créez et uploadez un torrent sur Nexum en quelques étapes</p>
         </div>
+        <div className="page-mode-toggle">
+          <button
+            className={`page-mode-btn${pageMode === 'single' ? ' page-mode-btn--active' : ''}`}
+            onClick={() => setPageMode('single')}
+            disabled={queueRunning}
+          >Unitaire</button>
+          <button
+            className={`page-mode-btn${pageMode === 'queue' ? ' page-mode-btn--active' : ''}`}
+            onClick={() => setPageMode('queue')}
+            disabled={queueRunning}
+          >File d'attente</button>
+        </div>
       </div>
 
-      {step !== 'done' && (
-        <StepIndicator current={step} steps={STEPS} />
+      {pageMode === 'queue' && (
+        <QueuePanel
+          queue={queue}
+          running={queueRunning}
+          dragging={queueDragging}
+          onAddFiles={async () => {
+            const paths = await SelectFiles('Ajouter des fichiers vidéo', 'Fichiers vidéo', '*.mkv;*.mp4;*.avi;*.mov;*.ts;*.m2ts;*.wmv').catch(() => [])
+            if (paths?.length) addPathsToQueue(paths)
+          }}
+          onAddDir={async () => {
+            const path = await SelectDirectory('Ajouter un dossier').catch(() => '')
+            if (path) addPathsToQueue([path])
+          }}
+          onDragOver={e => { e.preventDefault(); setQueueDragging(true) }}
+          onDragLeave={() => setQueueDragging(false)}
+          onRemove={id => setQueue(q => q.filter(i => i.id !== id))}
+          onClearDone={() => setQueue(q => q.filter(i => i.status !== 'done'))}
+          onStart={startQueue}
+          onStop={stopQueue}
+          onOpenUrl={url => BrowserOpenURL(url)}
+          onReset={() => setQueue([])}
+        />
       )}
 
-      {error && (
+      {pageMode === 'single' && step !== 'done' && (
+        <StepIndicator current={step} steps={STEPS} />
+      )}
+      {pageMode === 'single' && step === 'done' && null}
+
+      {pageMode === 'single' && error && (
         <div className="alert alert-error" style={{ margin: '0 24px 16px' }}>
           <span>⚠</span>
           <span>{error}</span>
@@ -383,7 +560,7 @@ export default function UploadPage() {
         </div>
       )}
 
-      <div className="step-content">
+      <div className="step-content" style={{ display: pageMode === 'queue' ? 'none' : undefined }}>
         {/* Step 1: Source */}
         {step === 'source' && (
           <div className="step-panel">
@@ -870,6 +1047,123 @@ export default function UploadPage() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ─── QueuePanel ─────────────────────────────────────────────────────────────
+
+interface QueuePanelProps {
+  queue: QueueItem[]
+  running: boolean
+  dragging: boolean
+  onAddFiles: () => void
+  onAddDir: () => void
+  onDragOver: (e: React.DragEvent) => void
+  onDragLeave: () => void
+  onRemove: (id: string) => void
+  onClearDone: () => void
+  onStart: () => void
+  onStop: () => void
+  onOpenUrl: (url: string) => void
+  onReset: () => void
+}
+
+function QueuePanel({ queue, running, dragging, onAddFiles, onAddDir, onDragOver, onDragLeave, onRemove, onClearDone, onStart, onStop, onOpenUrl, onReset }: QueuePanelProps) {
+  const pending = queue.filter(i => i.status === 'pending').length
+  const done = queue.filter(i => i.status === 'done').length
+  const errors = queue.filter(i => i.status === 'error').length
+  const processing = queue.find(i => i.status === 'processing')
+  const allDone = queue.length > 0 && pending === 0 && !processing
+
+  const statusIcon = (s: QueueItemStatus) => {
+    if (s === 'pending') return <span className="queue-status-icon queue-status-pending">○</span>
+    if (s === 'processing') return <span className="queue-status-icon queue-status-processing"><span className="spinner" /></span>
+    if (s === 'done') return <span className="queue-status-icon queue-status-done">✓</span>
+    return <span className="queue-status-icon queue-status-error">✕</span>
+  }
+
+  return (
+    <div className="queue-panel">
+      {/* Drop zone */}
+      <div
+        className={`queue-drop-zone${dragging ? ' queue-drop-zone--active' : ''}`}
+        style={{ '--wails-drop-target': 'drop' } as React.CSSProperties}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+      >
+        <span className="drop-icon" style={{ fontSize: 28 }}>📂</span>
+        <p className="drop-title" style={{ fontSize: 14 }}>Glissez des fichiers ou dossiers ici</p>
+        <div className="queue-add-buttons">
+          <button className="btn btn-secondary btn-sm" onClick={onAddFiles}>+ Fichiers</button>
+          <button className="btn btn-secondary btn-sm" onClick={onAddDir}>+ Dossier</button>
+        </div>
+      </div>
+
+      {/* Controls */}
+      {queue.length > 0 && (
+        <div className="queue-controls">
+          <div className="queue-stats">
+            <span className="queue-stat">{queue.length} élément{queue.length > 1 ? 's' : ''}</span>
+            {pending > 0 && <span className="queue-stat queue-stat--pending">{pending} en attente</span>}
+            {done > 0 && <span className="queue-stat queue-stat--done">{done} terminé{done > 1 ? 's' : ''}</span>}
+            {errors > 0 && <span className="queue-stat queue-stat--error">{errors} erreur{errors > 1 ? 's' : ''}</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {done > 0 && !running && (
+              <button className="btn btn-ghost btn-sm" onClick={onClearDone}>Effacer terminés</button>
+            )}
+            {allDone && !running && (
+              <button className="btn btn-ghost btn-sm" onClick={onReset}>Tout effacer</button>
+            )}
+            {running ? (
+              <button className="btn btn-secondary btn-sm" onClick={onStop}>⏹ Arrêter</button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={onStart}
+                disabled={pending === 0}
+              >
+                ▶ Lancer ({pending})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Queue list */}
+      {queue.length > 0 && (
+        <div className="queue-list">
+          {queue.map(item => (
+            <div key={item.id} className={`queue-item queue-item--${item.status}`}>
+              <div className="queue-item-status">{statusIcon(item.status)}</div>
+              <div className="queue-item-info">
+                <div className="queue-item-name">{item.name}</div>
+                {item.status === 'processing' && item.step && (
+                  <div className="queue-item-step">{item.step}</div>
+                )}
+                {item.status === 'error' && item.error && (
+                  <div className="queue-item-error">{item.error}</div>
+                )}
+                {item.status === 'done' && item.uploadResult && (
+                  <div className="queue-item-done-row">
+                    <span className="text-xs text-secondary">ID {item.uploadResult.torrent_id}</span>
+                    {item.uploadResult.url && (
+                      <button
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => onOpenUrl(item.uploadResult!.url)}
+                      >🔗</button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {item.status === 'pending' && !running && (
+                <button className="btn btn-ghost btn-xs queue-item-remove" onClick={() => onRemove(item.id)}>✕</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
