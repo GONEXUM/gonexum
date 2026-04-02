@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
-  SearchTMDB, GetTMDBDetails, GenerateNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
+  SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
   AppLoadSettings,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
@@ -129,7 +129,6 @@ export default function UploadPage() {
   // NFO
   const [nfoMode, setNfoMode] = useState<'generate' | 'existing'>('generate')
   const [nfoFilePath, setNfoFilePath] = useState('')
-  const [settingsNfoMode, setSettingsNfoMode] = useState<'nfo' | 'mediainfo'>('nfo')
   const [mediaInfoCLIText, setMediaInfoCLIText] = useState('')
 
   const [torrentProgress, setTorrentProgress] = useState<TorrentProgress | null>(null)
@@ -165,9 +164,6 @@ export default function UploadPage() {
     EventsOn('torrent:progress', (data: TorrentProgress) => {
       setTorrentProgress(data)
     })
-    AppLoadSettings().then(s => {
-      if (s.nfoMode === 'mediainfo') setSettingsNfoMode('mediainfo')
-    }).catch(() => {})
     OnFileDrop((_x, _y, paths) => {
       if (paths.length === 0) return
       if (pageModeRef.current === 'queue') {
@@ -224,6 +220,7 @@ export default function UploadPage() {
       } else {
         nfo = await GenerateNFO(tmdb, mi, cliText)
       }
+      try { await SaveNFO(nfo, torrent.name) } catch { /* non bloquant */ }
 
       upd({ step: 'Upload…' })
       const result = await UploadTorrent({
@@ -294,21 +291,6 @@ export default function UploadPage() {
     } catch (e) { err(e) }
   }
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragging(false)
-    const items = Array.from(e.dataTransfer.files)
-    if (items.length > 0) {
-      // Wails drag-drop provides paths via the file object
-      const file = items[0] as any
-      const path = file.path || ''
-      if (path) {
-        setSourcePath(path)
-        setIsDir(false)
-        setError('')
-      }
-    }
-  }
 
   const handleNext_Source = async () => {
     if (!sourcePath) { setError('Veuillez sélectionner un fichier ou dossier.'); return }
@@ -401,6 +383,7 @@ export default function UploadPage() {
       else setCategoryId(1)
       const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       setNfoContent(nfo)
+      if (name) try { await SaveNFO(nfo, name) } catch { /* non bloquant */ }
       setShowTmdbAlternatives(false)
     } catch (e) { err(e) }
     setTmdbSearching(false)
@@ -427,6 +410,7 @@ export default function UploadPage() {
       else setCategoryId(1)
       const nfo = await GenerateNFO(details, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       setNfoContent(nfo)
+      if (name) try { await SaveNFO(nfo, name) } catch { /* non bloquant */ }
       setTmdbSearchStatus('found')
       setShowTmdbAlternatives(false)
       setTmdbUrlInput('')
@@ -441,6 +425,7 @@ export default function UploadPage() {
       const content = await ReadTextFile(path)
       setNfoFilePath(path)
       setNfoContent(content)
+      if (name) try { await SaveNFO(content, name) } catch { /* non bloquant */ }
     } catch (e) { err(e) }
   }
 
@@ -449,7 +434,7 @@ export default function UploadPage() {
     if (!nfoContent) {
       // Generate a minimal NFO
       GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
-        .then(nfo => setNfoContent(nfo))
+        .then(nfo => { setNfoContent(nfo); SaveNFO(nfo, name).catch(() => {}) })
     }
     setError('')
     setStep('upload')
@@ -464,6 +449,7 @@ export default function UploadPage() {
     setError('')
     try {
       const nfo = nfoContent || await GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
+      try { await SaveNFO(nfo, name) } catch { /* non bloquant */ }
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,

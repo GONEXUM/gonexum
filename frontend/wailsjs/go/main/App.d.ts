@@ -28,6 +28,8 @@ export function ReadFileChunk(arg1:string,arg2:number,arg3:number):Promise<strin
 
 export function ReadTextFile(arg1:string):Promise<string>;
 
+export function SaveNFO(arg1:string,arg2:string):Promise<string>;
+
 export function SearchTMDB(arg1:string,arg2:string):Promise<Array<main.TMDBResult>>;
 
 export function SelectDirectory(arg1:string):Promise<string>;
