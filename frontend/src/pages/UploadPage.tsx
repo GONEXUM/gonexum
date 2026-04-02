@@ -5,7 +5,7 @@ import {
   AppLoadSettings,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
-import { BrowserOpenURL, EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
+import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import './UploadPage.css'
 
@@ -119,7 +119,16 @@ export default function UploadPage() {
     AppLoadSettings().then(s => {
       if (s.nfoMode === 'mediainfo') setSettingsNfoMode('mediainfo')
     }).catch(() => {})
-    return () => { EventsOff('torrent:progress') }
+    OnFileDrop((_x, _y, paths) => {
+      if (paths.length === 0) return
+      setSourcePath(paths[0])
+      setIsDir(false)
+      setError('')
+    }, true)
+    return () => {
+      EventsOff('torrent:progress')
+      OnFileDropOff()
+    }
   }, [])
 
   const err = (e: unknown) => {
@@ -381,9 +390,9 @@ export default function UploadPage() {
             <div
               ref={dropRef}
               className={`drop-zone ${dragging ? 'drop-zone-active' : ''} ${sourcePath ? 'drop-zone-filled' : ''}`}
+              style={{ '--wails-drop-target': 'drop' } as React.CSSProperties}
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
-              onDrop={handleDrop}
             >
               {sourcePath ? (
                 <div className="drop-zone-selected">
