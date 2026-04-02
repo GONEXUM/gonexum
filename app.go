@@ -258,14 +258,15 @@ func (a *App) PreviewNFO(tmpl string) (string, error) {
 			MediaType: "movie",
 		},
 		Media: MediaInfo{
-			Resolution:     "1080p",
-			VideoCodec:     "x264",
-			AudioCodec:     "DTS",
-			AudioLanguages: "Français, Anglais",
-			HDRFormat:      "",
-			Source:         "BluRay",
-			Duration:       "2h 19min",
-			FrameRate:      23.976,
+			Resolution:        "1080p",
+			VideoCodec:        "x264",
+			AudioCodec:        "DTS",
+			AudioLanguages:    "Français, Anglais",
+			SubtitleLanguages: "Français, Anglais, Français (forcé)",
+			HDRFormat:         "",
+			Source:            "BluRay",
+			Duration:          "2h 19min",
+			FrameRate:         23.976,
 		},
 	}
 	if tmpl == "" {

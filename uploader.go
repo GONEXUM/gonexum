@@ -69,6 +69,9 @@ func (a *App) UploadTorrent(params UploadParams) (UploadResponse, error) {
 	if params.AudioLanguages != "" {
 		fields["audio_languages"] = params.AudioLanguages
 	}
+	if params.SubtitleLanguages != "" {
+		fields["subtitle_languages"] = params.SubtitleLanguages
+	}
 	if params.HDRFormat != "" {
 		fields["hdr_format"] = params.HDRFormat
 	}

@@ -114,6 +114,7 @@ export default function UploadPage() {
   const [videoCodec, setVideoCodec] = useState('')
   const [audioCodec, setAudioCodec] = useState('')
   const [audioLangs, setAudioLangs] = useState('')
+  const [subtitleLangs, setSubtitleLangs] = useState('')
   const [hdrFormat, setHdrFormat] = useState('')
   const [source, setSource] = useState('')
 
@@ -237,6 +238,7 @@ export default function UploadPage() {
         videoCodec: (mi as any).videoCodec || '',
         audioCodec: (mi as any).audioCodec || '',
         audioLanguages: (mi as any).audioLanguages || '',
+        subtitleLanguages: (mi as any).subtitleLanguages || '',
         hdrFormat: (mi as any).hdrFormat || '',
         source: (mi as any).source || '',
       })
@@ -329,6 +331,7 @@ export default function UploadPage() {
         setVideoCodec(mi.videoCodec || '')
         setAudioCodec(mi.audioCodec || '')
         setAudioLangs(mi.audioLanguages || '')
+        setSubtitleLangs(mi.subtitleLanguages || '')
         setHdrFormat(mi.hdrFormat || '')
         setSource(mi.source || '')
         // Si le mode MediaInfo CLI est actif, pré-génère le contenu NFO
@@ -473,6 +476,7 @@ export default function UploadPage() {
         videoCodec,
         audioCodec,
         audioLanguages: audioLangs,
+        subtitleLanguages: subtitleLangs,
         hdrFormat,
         source,
       })
@@ -498,7 +502,7 @@ export default function UploadPage() {
     setNfoContent(''); setNfoMode('generate'); setNfoFilePath('')
     setUploadResult(null); setName('')
     setResolution(''); setVideoCodec(''); setAudioCodec('')
-    setAudioLangs(''); setHdrFormat(''); setSource('')
+    setAudioLangs(''); setSubtitleLangs(''); setHdrFormat(''); setSource('')
     setError('')
   }
 
@@ -670,7 +674,11 @@ export default function UploadPage() {
                 </div>
                 <div className="form-group">
                   <label className="label">Langues Audio</label>
-                  <input className="input" value={audioLangs} onChange={e => setAudioLangs(e.target.value)} placeholder="ex: Français (France), Anglais" />
+                  <input className="input" value={audioLangs} onChange={e => setAudioLangs(e.target.value)} placeholder="ex: Français, Anglais" />
+                </div>
+                <div className="form-group">
+                  <label className="label">Sous-titres</label>
+                  <input className="input" value={subtitleLangs} onChange={e => setSubtitleLangs(e.target.value)} placeholder="ex: Français, Anglais, Français (forcé)" />
                 </div>
                 <div className="form-group">
                   <label className="label">Format HDR</label>

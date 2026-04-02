@@ -10,18 +10,19 @@ type TorrentResult struct {
 
 // MediaInfo holds extracted media metadata from a video file
 type MediaInfo struct {
-	Resolution     string  `json:"resolution"`
-	VideoCodec     string  `json:"videoCodec"`
-	AudioCodec     string  `json:"audioCodec"`
-	AudioLanguages string  `json:"audioLanguages"`
-	HDRFormat      string  `json:"hdrFormat"`
-	Source         string  `json:"source"`
-	Duration       string  `json:"duration"`
-	FileSize       int64   `json:"fileSize"`
-	Width          int     `json:"width"`
-	Height         int     `json:"height"`
-	Bitrate        int64   `json:"bitrate"`
-	FrameRate      float64 `json:"frameRate"`
+	Resolution        string  `json:"resolution"`
+	VideoCodec        string  `json:"videoCodec"`
+	AudioCodec        string  `json:"audioCodec"`
+	AudioLanguages    string  `json:"audioLanguages"`
+	SubtitleLanguages string  `json:"subtitleLanguages"`
+	HDRFormat         string  `json:"hdrFormat"`
+	Source            string  `json:"source"`
+	Duration          string  `json:"duration"`
+	FileSize          int64   `json:"fileSize"`
+	Width             int     `json:"width"`
+	Height            int     `json:"height"`
+	Bitrate           int64   `json:"bitrate"`
+	FrameRate         float64 `json:"frameRate"`
 }
 
 // TMDBResult is a search result from TheMovieDB
@@ -51,19 +52,20 @@ type TMDBDetails struct {
 
 // UploadParams holds all parameters needed for the nexum upload
 type UploadParams struct {
-	TorrentPath    string `json:"torrentPath"`
-	NFOContent     string `json:"nfoContent"`
-	Name           string `json:"name"`
-	CategoryID     int    `json:"categoryId"`
-	Description    string `json:"description"`
-	TMDBId         int    `json:"tmdbId"`
-	TMDBType       string `json:"tmdbType"`
-	Resolution     string `json:"resolution"`
-	VideoCodec     string `json:"videoCodec"`
-	AudioCodec     string `json:"audioCodec"`
-	AudioLanguages string `json:"audioLanguages"`
-	HDRFormat      string `json:"hdrFormat"`
-	Source         string `json:"source"`
+	TorrentPath       string `json:"torrentPath"`
+	NFOContent        string `json:"nfoContent"`
+	Name              string `json:"name"`
+	CategoryID        int    `json:"categoryId"`
+	Description       string `json:"description"`
+	TMDBId            int    `json:"tmdbId"`
+	TMDBType          string `json:"tmdbType"`
+	Resolution        string `json:"resolution"`
+	VideoCodec        string `json:"videoCodec"`
+	AudioCodec        string `json:"audioCodec"`
+	AudioLanguages    string `json:"audioLanguages"`
+	SubtitleLanguages string `json:"subtitleLanguages"`
+	HDRFormat         string `json:"hdrFormat"`
+	Source            string `json:"source"`
 }
 
 // UploadMedia holds the media tags returned in UploadResponse

@@ -117,7 +117,10 @@ func generateDefaultNFO(details TMDBDetails, media MediaInfo) string {
 		line("║  " + padRight("Audio:", 16) + padRight(media.AudioCodec, 40) + "  ║")
 	}
 	if media.AudioLanguages != "" {
-		line("║  " + padRight("Langues:", 16) + padRight(truncate(media.AudioLanguages, 40), 40) + "  ║")
+		line("║  " + padRight("Langues audio:", 16) + padRight(truncate(media.AudioLanguages, 40), 40) + "  ║")
+	}
+	if media.SubtitleLanguages != "" {
+		line("║  " + padRight("Sous-titres:", 16) + padRight(truncate(media.SubtitleLanguages, 40), 40) + "  ║")
 	}
 	if media.HDRFormat != "" {
 		line("║  " + padRight("HDR:", 16) + padRight(media.HDRFormat, 40) + "  ║")
