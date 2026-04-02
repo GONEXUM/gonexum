@@ -5,6 +5,7 @@ export namespace main {
 	    videoCodec: string;
 	    audioCodec: string;
 	    audioLanguages: string;
+	    subtitleLanguages: string;
 	    hdrFormat: string;
 	    source: string;
 	    duration: string;
@@ -24,6 +25,7 @@ export namespace main {
 	        this.videoCodec = source["videoCodec"];
 	        this.audioCodec = source["audioCodec"];
 	        this.audioLanguages = source["audioLanguages"];
+	        this.subtitleLanguages = source["subtitleLanguages"];
 	        this.hdrFormat = source["hdrFormat"];
 	        this.source = source["source"];
 	        this.duration = source["duration"];
@@ -182,6 +184,7 @@ export namespace main {
 	    videoCodec: string;
 	    audioCodec: string;
 	    audioLanguages: string;
+	    subtitleLanguages: string;
 	    hdrFormat: string;
 	    source: string;
 	
@@ -202,6 +205,7 @@ export namespace main {
 	        this.videoCodec = source["videoCodec"];
 	        this.audioCodec = source["audioCodec"];
 	        this.audioLanguages = source["audioLanguages"];
+	        this.subtitleLanguages = source["subtitleLanguages"];
 	        this.hdrFormat = source["hdrFormat"];
 	        this.source = source["source"];
 	    }

@@ -6,6 +6,7 @@ export interface ParsedMediaInfo {
   videoCodec: string
   audioCodec: string
   audioLanguages: string
+  subtitleLanguages: string
   hdrFormat: string
   source: string
   duration: string
@@ -286,6 +287,7 @@ export async function getMediaInfoJS(filePath: string): Promise<ParsedMediaInfo>
   const general = tracks.find((t: any) => t['@type'] === 'General') ?? {}
   const video = tracks.find((t: any) => t['@type'] === 'Video') ?? {}
   const audioTracks = tracks.filter((t: any) => t['@type'] === 'Audio')
+  const textTracks = tracks.filter((t: any) => t['@type'] === 'Text')
 
   const w = parseInt(video.Width ?? '0')
   const h = parseInt(video.Height ?? '0')
@@ -311,11 +313,23 @@ export async function getMediaInfoJS(filePath: string): Promise<ParsedMediaInfo>
   // Frame rate
   const fps = parseFloat(video.FrameRate ?? '0')
 
+  // Subtitle languages
+  const subSeen = new Set<string>()
+  const subs: string[] = []
+  for (const t of textTracks) {
+    const lang = normalizeLang(t.Language ?? '') || (t.Title ?? '')
+    if (!lang) continue
+    const forced = t.Forced === 'Yes' ? ' (forcé)' : ''
+    const key = lang + forced
+    if (!subSeen.has(key)) { subSeen.add(key); subs.push(lang + forced) }
+  }
+
   return {
     resolution: detectResolution(w, h),
     videoCodec: normalizeVideoCodec(video.Format ?? '', video.Format_Profile ?? ''),
     audioCodec: pickBestAudioCodec(audioTracks),
     audioLanguages: langs.join(', '),
+    subtitleLanguages: subs.join(', '),
     hdrFormat: detectHDR(video),
     source: guessSource(filePath),
     duration,
