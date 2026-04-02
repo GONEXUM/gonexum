@@ -20,6 +20,9 @@ func main() {
 		Title:  "GONEXUM",
 		Width:  1024,
 		Height: 768,
+		DragAndDrop: &options.DragAndDrop{
+			EnableFileDrop: true,
+		},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
