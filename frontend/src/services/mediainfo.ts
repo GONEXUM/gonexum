@@ -175,6 +175,7 @@ function fmtBitrate(bps: number): string {
 
 function buildGeneralSection(g: any): string {
   let out = 'General\n'
+  out += fmtField('Unique ID', g.UniqueID ?? '')
   out += fmtField('Complete name', g.CompleteName ?? g.FileName ?? '')
   out += fmtField('Format', g.Format ?? '')
   out += fmtField('Format version', g.Format_Version ?? '')
@@ -198,6 +199,7 @@ function buildVideoSection(v: any, idx: number): string {
   out += fmtField('Format', v.Format ?? '')
   out += fmtField('Format/Info', v.Format_Info ?? '')
   out += fmtField('Format profile', v.Format_Profile ?? '')
+  out += fmtField('Format settings', v.Format_Settings ?? '')
   out += fmtField('HDR format', v.HDR_Format ?? '')
   out += fmtField('HDR format compatibility', v.HDR_Format_Compatibility ?? '')
   out += fmtField('Codec ID', v.CodecID ?? '')
@@ -221,6 +223,7 @@ function buildVideoSection(v: any, idx: number): string {
   out += fmtField('Bit depth', v.BitDepth ? `${v.BitDepth} bits` : '')
   out += fmtField('Scan type', v.ScanType ?? '')
   out += fmtField('Writing library', v.Encoded_Library ?? '')
+  out += fmtField('Encoding settings', v.Encoded_Library_Settings ?? '')
   return out
 }
 
@@ -243,6 +246,7 @@ function buildAudioSection(a: any, idx: number): string {
   out += fmtField('Frame rate', a.FrameRate ? `${parseFloat(a.FrameRate).toFixed(3)} FPS` : '')
   out += fmtField('Bit depth', a.BitDepth ? `${a.BitDepth} bits` : '')
   out += fmtField('Compression mode', a.Compression_Mode ?? '')
+  out += fmtField('Title', a.Title ?? '')
   out += fmtField('Language', (a.Language_String ?? normalizeLang(a.Language ?? '')) || '')
   out += fmtField('Default', a.Default ?? '')
   out += fmtField('Forced', a.Forced ?? '')
@@ -255,9 +259,31 @@ function buildTextSection(t: any, idx: number): string {
   out += fmtField('ID', t.ID ?? '')
   out += fmtField('Format', t.Format ?? '')
   out += fmtField('Codec ID', t.CodecID ?? '')
+  out += fmtField('Codec ID/Info', t.CodecID_Info ?? '')
+  const dur = parseFloat(t.Duration ?? '0')
+  if (dur) out += fmtField('Duration', fmtDuration(dur))
+  const br = parseInt(t.BitRate ?? '0')
+  if (br) out += fmtField('Bit rate', fmtBitrate(br))
+  if (t.FrameRate) out += fmtField('Frame rate', `${parseFloat(t.FrameRate).toFixed(3)} FPS`)
+  const count = t.ElementCount ?? t.Count ?? ''
+  if (count) out += fmtField('Count of elements', String(count))
+  const ss = parseInt(t.StreamSize ?? '0')
+  if (ss) out += fmtField('Stream size', fmtBytes(ss))
+  out += fmtField('Title', t.Title ?? '')
   out += fmtField('Language', (t.Language_String ?? normalizeLang(t.Language ?? '')) || '')
   out += fmtField('Default', t.Default ?? '')
   out += fmtField('Forced', t.Forced ?? '')
+  return out
+}
+
+function buildMenuSection(m: any): string {
+  // Menu tracks have chapter entries as extra properties (timestamp keys)
+  const entries = Object.entries(m).filter(([k]) => /^\d{2}:\d{2}:\d{2}/.test(k))
+  if (entries.length === 0) return ''
+  let out = '\nMenu\n'
+  for (const [ts, val] of entries) {
+    out += fmtField(ts, String(val))
+  }
   return out
 }
 
@@ -269,11 +295,13 @@ export async function getMediaInfoCLIText(filePath: string): Promise<string> {
   const videoTracks = tracks.filter((t: any) => t['@type'] === 'Video')
   const audioTracks = tracks.filter((t: any) => t['@type'] === 'Audio')
   const textTracks = tracks.filter((t: any) => t['@type'] === 'Text')
+  const menuTracks = tracks.filter((t: any) => t['@type'] === 'Menu')
 
   let out = buildGeneralSection(general)
   videoTracks.forEach((v, i) => { out += buildVideoSection(v, i) })
   audioTracks.forEach((a, i) => { out += buildAudioSection(a, i) })
   textTracks.forEach((t, i) => { out += buildTextSection(t, i) })
+  menuTracks.forEach((m) => { out += buildMenuSection(m) })
 
   return out.trimEnd() + '\n'
 }

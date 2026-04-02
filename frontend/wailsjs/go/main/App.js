@@ -54,6 +54,10 @@ export function ReadTextFile(arg1) {
   return window['go']['main']['App']['ReadTextFile'](arg1);
 }
 
+export function SaveNFO(arg1, arg2) {
+  return window['go']['main']['App']['SaveNFO'](arg1, arg2);
+}
+
 export function SearchTMDB(arg1, arg2) {
   return window['go']['main']['App']['SearchTMDB'](arg1, arg2);
 }

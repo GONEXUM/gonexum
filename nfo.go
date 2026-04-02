@@ -54,41 +54,43 @@ func (a *App) GenerateNFO(details TMDBDetails, media MediaInfo, mediaInfoCLI str
 		}
 		// Fall back to default on execution error
 	}
-	return generateDefaultNFO(details, media)
+	return generateDefaultNFO(details, mediaInfoCLI)
 }
 
 // generateDefaultNFO produces the built-in box-drawing NFO layout.
-func generateDefaultNFO(details TMDBDetails, media MediaInfo) string {
+func generateDefaultNFO(details TMDBDetails, mediaInfoCLI string) string {
+	const W = 90 // largeur intérieure entre les ║
 	var sb strings.Builder
 
 	line := func(s string) { sb.WriteString(s + "\n") }
+	blank := func() { line("║" + strings.Repeat(" ", W) + "║") }
+	sep := func() { line("╠" + strings.Repeat("═", W) + "╣") }
 
-	sep := strings.Repeat("─", 60)
+	// label 16 + valeur W-20 + marges 2+2 = W
+	const labelW = 16
+	const valW = W - 4 - labelW // 70
 
-	line("╔" + strings.Repeat("═", 60) + "╗")
-	line("║" + center("GONEXUM NFO", 60) + "║")
-	line("╠" + strings.Repeat("═", 60) + "╣")
-	line("║" + "                                                            " + "║")
+	line("╔" + strings.Repeat("═", W) + "╗")
+	line("║" + center("GONEXUM NFO", W) + "║")
+	sep()
+	blank()
 
 	if details.Title != "" {
-		line("║  " + padRight("Titre:", 16) + padRight(truncate(details.Title, 40), 40) + "  ║")
+		line("║  " + padRight("Titre:", labelW) + padRight(details.Title, valW) + "  ║")
 		if details.Year != "" {
-			line("║  " + padRight("Année:", 16) + padRight(details.Year, 40) + "  ║")
+			line("║  " + padRight("Année:", labelW) + padRight(details.Year, valW) + "  ║")
 		}
 		if len(details.Genres) > 0 {
-			genres := strings.Join(details.Genres, ", ")
-			line("║  " + padRight("Genre:", 16) + padRight(truncate(genres, 40), 40) + "  ║")
+			line("║  " + padRight("Genre:", labelW) + padRight(strings.Join(details.Genres, ", "), valW) + "  ║")
 		}
 		if details.Director != "" {
-			line("║  " + padRight("Réalisateur:", 16) + padRight(truncate(details.Director, 40), 40) + "  ║")
+			line("║  " + padRight("Réalisateur:", labelW) + padRight(details.Director, valW) + "  ║")
 		}
 		if details.Rating > 0 {
-			rating := fmt.Sprintf("%.1f/10", details.Rating)
-			line("║  " + padRight("Note:", 16) + padRight(rating, 40) + "  ║")
+			line("║  " + padRight("Note:", labelW) + padRight(fmt.Sprintf("%.1f/10", details.Rating), valW) + "  ║")
 		}
 		if details.Runtime > 0 {
-			rt := fmt.Sprintf("%d min", details.Runtime)
-			line("║  " + padRight("Durée:", 16) + padRight(rt, 40) + "  ║")
+			line("║  " + padRight("Durée:", labelW) + padRight(fmt.Sprintf("%d min", details.Runtime), valW) + "  ║")
 		}
 		if details.ID > 0 {
 			mediaType := details.MediaType
@@ -96,78 +98,68 @@ func generateDefaultNFO(details TMDBDetails, media MediaInfo) string {
 				mediaType = "movie"
 			}
 			tmdbURL := fmt.Sprintf("https://www.themoviedb.org/%s/%d", mediaType, details.ID)
-			line("║  " + padRight("TMDB:", 16) + padRight(truncate(tmdbURL, 40), 40) + "  ║")
+			line("║  " + padRight("TMDB:", labelW) + padRight(tmdbURL, valW) + "  ║")
 		}
 	}
 
-	line("║" + "                                                            " + "║")
-	line("╠" + strings.Repeat("═", 60) + "╣")
-	line("║" + center("INFORMATIONS TECHNIQUES", 60) + "║")
-	line("╠" + strings.Repeat("═", 60) + "╣")
-	line("║" + "                                                            " + "║")
-
-	if media.Resolution != "" {
-		line("║  " + padRight("Résolution:", 16) + padRight(media.Resolution, 40) + "  ║")
-	}
-	if media.VideoCodec != "" {
-		line("║  " + padRight("Vidéo:", 16) + padRight(media.VideoCodec, 40) + "  ║")
-	}
-	if media.AudioCodec != "" {
-		line("║  " + padRight("Audio:", 16) + padRight(media.AudioCodec, 40) + "  ║")
-	}
-	if media.AudioLanguages != "" {
-		line("║  " + padRight("Langues audio:", 16) + padRight(truncate(media.AudioLanguages, 40), 40) + "  ║")
-	}
-	if media.SubtitleLanguages != "" {
-		line("║  " + padRight("Sous-titres:", 16) + padRight(truncate(media.SubtitleLanguages, 40), 40) + "  ║")
-	}
-	if media.HDRFormat != "" {
-		line("║  " + padRight("HDR:", 16) + padRight(media.HDRFormat, 40) + "  ║")
-	}
-	if media.Source != "" {
-		line("║  " + padRight("Source:", 16) + padRight(media.Source, 40) + "  ║")
-	}
-	if media.Duration != "" {
-		line("║  " + padRight("Durée fichier:", 16) + padRight(media.Duration, 40) + "  ║")
-	}
-	if media.FrameRate > 0 {
-		fps := fmt.Sprintf("%.2f fps", media.FrameRate)
-		line("║  " + padRight("FPS:", 16) + padRight(fps, 40) + "  ║")
-	}
-
-	line("║" + "                                                            " + "║")
+	blank()
 
 	if details.Overview != "" {
-		line("╠" + strings.Repeat("═", 60) + "╣")
-		line("║" + center("SYNOPSIS", 60) + "║")
-		line("╠" + strings.Repeat("═", 60) + "╣")
-		line("║" + "                                                            " + "║")
+		sep()
+		line("║" + center("SYNOPSIS", W) + "║")
+		sep()
+		blank()
 		words := strings.Fields(details.Overview)
-		currentLine := "  "
+		cur := "  "
 		for _, w := range words {
-			if len(currentLine)+len(w)+1 > 58 {
-				line("║" + padRight(currentLine, 60) + "║")
-				currentLine = "  " + w
+			if displayWidth(cur)+1+displayWidth(w) > W {
+				line("║" + padRight(cur, W) + "║")
+				cur = "  " + w
+			} else if cur == "  " {
+				cur += w
 			} else {
-				if currentLine == "  " {
-					currentLine += w
-				} else {
-					currentLine += " " + w
-				}
+				cur += " " + w
 			}
 		}
-		if currentLine != "  " {
-			line("║" + padRight(currentLine, 60) + "║")
+		if cur != "  " {
+			line("║" + padRight(cur, W) + "║")
 		}
-		line("║" + "                                                            " + "║")
+		blank()
 	}
 
-	line("╠" + strings.Repeat("═", 60) + "╣")
-	line("║" + center("Généré par GONEXUM — nexum-core.com", 60) + "║")
-	line("╚" + strings.Repeat("═", 60) + "╝")
-	_ = sep
+	if mediaInfoCLI != "" {
+		sep()
+		line("║" + center("INFORMATIONS TECHNIQUES", W) + "║")
+		sep()
+		blank()
+		for l := range strings.SplitSeq(mediaInfoCLI, "\n") {
+			for _, chunk := range wrapLine(l, W-4) {
+				line("║  " + padRight(chunk, W-4) + "  ║")
+			}
+		}
+		blank()
+	}
+
+	sep()
+	line("║" + center("Généré par GONEXUM — nexum-core.com", W) + "║")
+	line("╚" + strings.Repeat("═", W) + "╝")
 
 	return sb.String()
+}
+
+// wrapLine coupe s en tranches de width colonnes visuelles maximum.
+func wrapLine(s string, width int) []string {
+	if s == "" {
+		return []string{""}
+	}
+	var lines []string
+	for displayWidth(s) > width {
+		cut := truncateToWidth(s, width)
+		lines = append(lines, cut)
+		s = s[len(cut):]
+	}
+	lines = append(lines, s)
+	return lines
 }
 
 // runeWidth retourne la largeur visuelle d'un rune en monospace :

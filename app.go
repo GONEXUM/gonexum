@@ -198,6 +198,25 @@ func (a *App) GetAppVersion() string {
 	return "v" + strings.TrimPrefix(AppVersion, "v")
 }
 
+// SaveNFO writes NFO content to the output directory as "<baseName>.nfo".
+// baseName should be the release name without any extension.
+// Returns the absolute path of the written file.
+func (a *App) SaveNFO(content string, baseName string) (string, error) {
+	s, err := loadSettings()
+	if err != nil {
+		return "", err
+	}
+	dir := s.OutputDir
+	if dir == "" {
+		dir = os.TempDir()
+	}
+	dest := filepath.Join(dir, baseName+".nfo")
+	if err := os.WriteFile(dest, []byte(content), 0644); err != nil {
+		return "", err
+	}
+	return dest, nil
+}
+
 const sampleMediaInfoCLI = `General
 Complete name                            : Fight.Club.1999.1080p.BluRay.DTS.x264.mkv
 Format                                   : Matroska
@@ -270,7 +289,7 @@ func (a *App) PreviewNFO(tmpl string) (string, error) {
 		},
 	}
 	if tmpl == "" {
-		return generateDefaultNFO(sample.TMDB, sample.Media), nil
+		return generateDefaultNFO(sample.TMDB, sample.MediaInfoCLI), nil
 	}
 	return renderCustomNFO(tmpl, sample)
 }
