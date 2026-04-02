@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"text/template"
-	"unicode/utf8"
 )
 
 // NFOTemplateData is passed to custom NFO templates
@@ -171,10 +170,42 @@ func generateDefaultNFO(details TMDBDetails, media MediaInfo) string {
 	return sb.String()
 }
 
+// runeWidth retourne la largeur visuelle d'un rune en monospace :
+// 2 pour les caractères CJK/pleine largeur, 1 pour les autres.
+func runeWidth(r rune) int {
+	if r >= 0x1100 && (r <= 0x115F ||
+		r == 0x2329 || r == 0x232A ||
+		(r >= 0x2E80 && r <= 0x303E) ||
+		(r >= 0x3040 && r <= 0x33FF) ||
+		(r >= 0x3400 && r <= 0x4DBF) ||
+		(r >= 0x4E00 && r <= 0xA4CF) ||
+		(r >= 0xA960 && r <= 0xA97F) ||
+		(r >= 0xAC00 && r <= 0xD7A3) ||
+		(r >= 0xF900 && r <= 0xFAFF) ||
+		(r >= 0xFE10 && r <= 0xFE1F) ||
+		(r >= 0xFE30 && r <= 0xFE4F) ||
+		(r >= 0xFF00 && r <= 0xFF60) ||
+		(r >= 0xFFE0 && r <= 0xFFE6) ||
+		(r >= 0x20000 && r <= 0x2FFFD) ||
+		(r >= 0x30000 && r <= 0x3FFFD)) {
+		return 2
+	}
+	return 1
+}
+
+// displayWidth retourne la largeur visuelle d'une chaîne en monospace.
+func displayWidth(s string) int {
+	w := 0
+	for _, r := range s {
+		w += runeWidth(r)
+	}
+	return w
+}
+
 func center(s string, width int) string {
-	n := utf8.RuneCountInString(s)
+	n := displayWidth(s)
 	if n >= width {
-		return string([]rune(s)[:width])
+		return truncateToWidth(s, width)
 	}
 	total := width - n
 	left := total / 2
@@ -183,20 +214,43 @@ func center(s string, width int) string {
 }
 
 func padRight(s string, width int) string {
-	n := utf8.RuneCountInString(s)
+	n := displayWidth(s)
 	if n >= width {
-		return string([]rune(s)[:width])
+		return truncateToWidth(s, width)
 	}
 	return s + strings.Repeat(" ", width-n)
 }
 
+// truncateToWidth coupe s à exactement width colonnes visuelles.
+func truncateToWidth(s string, width int) string {
+	w := 0
+	for i, r := range s {
+		rw := runeWidth(r)
+		if w+rw > width {
+			return s[:i]
+		}
+		w += rw
+	}
+	return s
+}
+
 func truncate(s string, max int) string {
-	runes := []rune(s)
-	if len(runes) <= max {
+	if displayWidth(s) <= max {
 		return s
 	}
 	if max <= 3 {
-		return string(runes[:max])
+		return truncateToWidth(s, max)
 	}
-	return string(runes[:max-3]) + "..."
+	target := max - 3
+	w := 0
+	var result []rune
+	for _, r := range s {
+		rw := runeWidth(r)
+		if w+rw > target {
+			break
+		}
+		w += rw
+		result = append(result, r)
+	}
+	return string(result) + "..."
 }
