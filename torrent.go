@@ -174,9 +174,6 @@ func (a *App) CreateTorrent(sourcePath string) (TorrentResult, error) {
 	}
 
 	baseName := filepath.Base(sourcePath)
-	if !fi.IsDir() {
-		baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
-	}
 
 	info := torrentInfo{
 		Name: baseName,
@@ -268,10 +265,16 @@ func (a *App) CreateTorrent(sourcePath string) (TorrentResult, error) {
 		return TorrentResult{}, fmt.Errorf("failed to write torrent: %w", err)
 	}
 
+	// Le nom affiché dans l'UI est sans extension (titre du release)
+	displayName := info.Name
+	if !fi.IsDir() {
+		displayName = strings.TrimSuffix(info.Name, filepath.Ext(info.Name))
+	}
+
 	return TorrentResult{
 		FilePath: outputPath,
 		InfoHash: infoHash,
-		Name:     info.Name,
+		Name:     displayName,
 		Size:     totalSize,
 	}, nil
 }
