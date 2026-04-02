@@ -66,6 +66,10 @@ export function SelectFile(arg1, arg2, arg3) {
   return window['go']['main']['App']['SelectFile'](arg1, arg2, arg3);
 }
 
+export function SelectFiles(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SelectFiles'](arg1, arg2, arg3);
+}
+
 export function UploadTorrent(arg1) {
   return window['go']['main']['App']['UploadTorrent'](arg1);
 }

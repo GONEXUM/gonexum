@@ -34,6 +34,8 @@ export function SelectDirectory(arg1:string):Promise<string>;
 
 export function SelectFile(arg1:string,arg2:string,arg3:string):Promise<string>;
 
+export function SelectFiles(arg1:string,arg2:string,arg3:string):Promise<Array<string>>;
+
 export function UploadTorrent(arg1:main.UploadParams):Promise<main.UploadResponse>;
 
 export function ValidateNFOTemplate(arg1:string):Promise<void>;
