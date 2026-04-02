@@ -252,7 +252,8 @@ func (a *App) CreateTorrent(sourcePath string) (TorrentResult, error) {
 	if outputDir == "" {
 		outputDir = os.TempDir()
 	}
-	outputPath := filepath.Join(outputDir, info.Name+".torrent")
+	torrentBaseName := strings.TrimSuffix(info.Name, filepath.Ext(info.Name))
+	outputPath := filepath.Join(outputDir, torrentBaseName+".torrent")
 
 	f, err := os.Create(outputPath)
 	if err != nil {
