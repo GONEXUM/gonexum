@@ -135,9 +135,46 @@ jobs:
           name: GONEXUM-linux-amd64
           path: build/bin/GONEXUM-${{ github.ref_name }}-linux-amd64.tar.gz
 
+  build-cli:
+    name: Build CLI (${{ matrix.suffix }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: linux-amd64
+          - goos: linux
+            goarch: arm64
+            suffix: linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Build CLI (${{ matrix.suffix }})
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags "-X main.AppVersion=${{ github.ref_name }}" \
+            -o gonexum-cli-${{ github.ref_name }}-${{ matrix.suffix }} \
+            ./cmd/gonexum-cli/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gonexum-cli-${{ matrix.suffix }}
+          path: gonexum-cli-${{ github.ref_name }}-${{ matrix.suffix }}
+
   release:
     name: Publish Release
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos, build-windows, build-linux, build-cli]
     outputs:
       tag: ${{ github.ref_name }}
     runs-on: ubuntu-latest
@@ -160,18 +197,37 @@ jobs:
             dist/GONEXUM-macos-arm64/GONEXUM-${{ github.ref_name }}-macos-arm64.zip
             dist/GONEXUM-windows-amd64/GONEXUM-${{ github.ref_name }}-windows-amd64.exe
             dist/GONEXUM-linux-amd64/GONEXUM-${{ github.ref_name }}-linux-amd64.tar.gz
+            dist/gonexum-cli-linux-amd64/gonexum-cli-${{ github.ref_name }}-linux-amd64
+            dist/gonexum-cli-linux-arm64/gonexum-cli-${{ github.ref_name }}-linux-arm64
           generate_release_notes: false
           body: |
             ## GONEXUM ${{ github.ref_name }}
 
-            ### Téléchargement
+            ### Application desktop
 
             | Plateforme | Fichier |
             |---|---|
-            | macOS Apple Silicon (M1->M5) | `GONEXUM-${{ github.ref_name }}-macos-arm64.zip` |
+            | macOS Apple Silicon (M1→M5) | `GONEXUM-${{ github.ref_name }}-macos-arm64.zip` |
             | macOS Intel | `GONEXUM-${{ github.ref_name }}-macos-amd64.zip` |
             | Windows 64-bit | `GONEXUM-${{ github.ref_name }}-windows-amd64.exe` |
             | Linux 64-bit | `GONEXUM-${{ github.ref_name }}-linux-amd64.tar.gz` |
+
+            ### CLI (seedbox / serveur dédié)
+
+            Binaire standalone, sans interface graphique. Idéal pour une utilisation sur seedbox ou serveur.
+            Nécessite `ffprobe` (et optionnellement `mediainfo`) installé sur le serveur.
+
+            | Plateforme | Fichier |
+            |---|---|
+            | Linux 64-bit (amd64) | `gonexum-cli-${{ github.ref_name }}-linux-amd64` |
+            | Linux ARM64 (Raspberry Pi, etc.) | `gonexum-cli-${{ github.ref_name }}-linux-arm64` |
+
+            **Installation rapide :**
+            ```bash
+            chmod +x gonexum-cli-${{ github.ref_name }}-linux-amd64
+            sudo mv gonexum-cli-${{ github.ref_name }}-linux-amd64 /usr/local/bin/gonexum-cli
+            gonexum-cli --help
+            ```
 
             ---
 
@@ -263,19 +319,23 @@ jobs:
             sleep 16
           }
 
-          upload_vt "dist/GONEXUM-macos-amd64/GONEXUM-${TAG}-macos-amd64.zip"     "macos_amd64"
-          upload_vt "dist/GONEXUM-macos-arm64/GONEXUM-${TAG}-macos-arm64.zip"     "macos_arm64"
-          upload_vt "dist/GONEXUM-windows-amd64/GONEXUM-${TAG}-windows-amd64.exe" "windows_amd64"
-          upload_vt "dist/GONEXUM-linux-amd64/GONEXUM-${TAG}-linux-amd64.tar.gz"  "linux_amd64"
+          upload_vt "dist/GONEXUM-macos-amd64/GONEXUM-${TAG}-macos-amd64.zip"                  "macos_amd64"
+          upload_vt "dist/GONEXUM-macos-arm64/GONEXUM-${TAG}-macos-arm64.zip"                  "macos_arm64"
+          upload_vt "dist/GONEXUM-windows-amd64/GONEXUM-${TAG}-windows-amd64.exe"              "windows_amd64"
+          upload_vt "dist/GONEXUM-linux-amd64/GONEXUM-${TAG}-linux-amd64.tar.gz"               "linux_amd64"
+          upload_vt "dist/gonexum-cli-linux-amd64/gonexum-cli-${TAG}-linux-amd64"              "cli_linux_amd64"
+          upload_vt "dist/gonexum-cli-linux-arm64/gonexum-cli-${TAG}-linux-arm64"              "cli_linux_arm64"
 
       - name: Append VirusTotal section to release
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
           TAG: ${{ github.ref_name }}
-          VT_MACOS_ARM64:   ${{ steps.vt.outputs.macos_arm64 }}
-          VT_MACOS_AMD64:   ${{ steps.vt.outputs.macos_amd64 }}
-          VT_WINDOWS:       ${{ steps.vt.outputs.windows_amd64 }}
-          VT_LINUX:         ${{ steps.vt.outputs.linux_amd64 }}
+          VT_MACOS_ARM64:     ${{ steps.vt.outputs.macos_arm64 }}
+          VT_MACOS_AMD64:     ${{ steps.vt.outputs.macos_amd64 }}
+          VT_WINDOWS:         ${{ steps.vt.outputs.windows_amd64 }}
+          VT_LINUX:           ${{ steps.vt.outputs.linux_amd64 }}
+          VT_CLI_LINUX_AMD64: ${{ steps.vt.outputs.cli_linux_amd64 }}
+          VT_CLI_LINUX_ARM64: ${{ steps.vt.outputs.cli_linux_arm64 }}
         run: |
           vt_row() {
             local label="$1" url="$2"
@@ -301,6 +361,8 @@ jobs:
             vt_row "macOS Intel (amd64)"         "$VT_MACOS_AMD64"
             vt_row "Windows 64-bit"              "$VT_WINDOWS"
             vt_row "Linux 64-bit"                "$VT_LINUX"
+            vt_row "CLI Linux amd64"             "$VT_CLI_LINUX_AMD64"
+            vt_row "CLI Linux arm64"             "$VT_CLI_LINUX_ARM64"
           } > /tmp/full_body.md
 
           gh release edit "$TAG" --repo diabolino/gonexum-releases --notes-file /tmp/full_body.md
