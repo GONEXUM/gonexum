@@ -45,7 +45,7 @@ func (a *App) UploadTorrent(params UploadParams) (UploadResponse, error) {
 
 	// Add string fields
 	fields := map[string]string{
-		"name":        params.Name,
+		"name":        normalizeName(params.Name),
 		"category_id": strconv.Itoa(params.CategoryID),
 	}
 	if params.Description != "" {
@@ -174,6 +174,28 @@ func (a *App) DownloadTorrent(torrentID int) (string, error) {
 	}
 
 	return outputPath, nil
+}
+
+// normalizeName remplace les espaces et parenthèses par des points (format scene).
+// Ex: "The Wild Robot (2024) 1080p" → "The.Wild.Robot.2024.1080p"
+func normalizeName(name string) string {
+	var buf []byte
+	prevDot := false
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c == '(' || c == ')' {
+			continue
+		}
+		if c == ' ' {
+			c = '.'
+		}
+		if c == '.' && prevDot {
+			continue
+		}
+		prevDot = c == '.'
+		buf = append(buf, c)
+	}
+	return string(buf)
 }
 
 func addFilePart(writer *multipart.Writer, field, filePath string) error {

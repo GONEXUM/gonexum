@@ -35,7 +35,7 @@ func uploadTorrent(params UploadParams, settings Settings) (UploadResponse, erro
 	}
 
 	fields := map[string]string{
-		"name":        params.Name,
+		"name":        normalizeName(params.Name),
 		"category_id": strconv.Itoa(params.CategoryID),
 	}
 	if params.Description != "" {
@@ -118,6 +118,26 @@ func uploadTorrent(params UploadParams, settings Settings) (UploadResponse, erro
 		return UploadResponse{}, fmt.Errorf("failed to parse server response: %w", err)
 	}
 	return result, nil
+}
+
+func normalizeName(name string) string {
+	var buf []byte
+	prevDot := false
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c == '(' || c == ')' {
+			continue
+		}
+		if c == ' ' {
+			c = '.'
+		}
+		if c == '.' && prevDot {
+			continue
+		}
+		prevDot = c == '.'
+		buf = append(buf, c)
+	}
+	return string(buf)
 }
 
 func addFilePart(writer *multipart.Writer, field, filePath string) error {
