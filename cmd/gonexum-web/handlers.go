@@ -178,6 +178,112 @@ func handleNFOPreview(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"content": content})
 }
 
+// ── Queue handlers ───────────────────────────────────────────────────────────
+
+// GET  /api/queue       → list items
+// POST /api/queue       → add item
+func handleQueue(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		items := globalQueue.List()
+		if items == nil {
+			items = []*QueueItem{}
+		}
+		jsonOK(w, items)
+
+	case http.MethodPost:
+		var item QueueItem
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			jsonErr(w, 400, "JSON invalide: "+err.Error())
+			return
+		}
+		if item.SourcePath == "" {
+			jsonErr(w, 400, "sourcePath requis")
+			return
+		}
+		globalQueue.Add(&item)
+		jsonOK(w, map[string]string{"id": item.ID})
+
+	default:
+		http.Error(w, "Method not allowed", 405)
+	}
+}
+
+// POST /api/queue/remove  {"id":"..."}
+func handleQueueRemove(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		jsonErr(w, 400, "id requis")
+		return
+	}
+	if globalQueue.Remove(req.ID) {
+		jsonOK(w, map[string]string{"status": "ok"})
+	} else {
+		jsonErr(w, 404, "item introuvable ou déjà en cours")
+	}
+}
+
+// POST /api/queue/clear — remove done/error items
+func handleQueueClear(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	globalQueue.ClearDone()
+	jsonOK(w, map[string]string{"status": "ok"})
+}
+
+// GET /api/queue/events — SSE stream of queue state
+func handleQueueEvents(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming non supporté", 500)
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	ch := globalQueue.Subscribe()
+	defer globalQueue.Unsubscribe(ch)
+
+	// Send current state immediately
+	items := globalQueue.List()
+	if items == nil {
+		items = []*QueueItem{}
+	}
+	initial, _ := json.Marshal(items)
+	fmt.Fprintf(w, "data: %s\n\n", initial)
+	flusher.Flush()
+
+	ctx := r.Context()
+	keepalive := time.NewTicker(20 * time.Second)
+	defer keepalive.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-keepalive.C:
+			fmt.Fprintf(w, ": keepalive\n\n")
+			flusher.Flush()
+		case data, more := <-ch:
+			if !more {
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		}
+	}
+}
+
 var fallbackCategories = []map[string]interface{}{
 	{"id": 1, "name": "Films", "slug": "films"},
 	{"id": 2, "name": "Séries", "slug": "series"},

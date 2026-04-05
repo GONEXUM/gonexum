@@ -60,6 +60,10 @@ Exemples:
 	http.HandleFunc("/api/nfo/validate", handleNFOValidate)
 	http.HandleFunc("/api/nfo/preview", handleNFOPreview)
 	http.HandleFunc("/api/categories", handleCategories)
+	http.HandleFunc("/api/queue", handleQueue)
+	http.HandleFunc("/api/queue/remove", handleQueueRemove)
+	http.HandleFunc("/api/queue/clear", handleQueueClear)
+	http.HandleFunc("/api/queue/events", handleQueueEvents)
 
 	// Static files (embedded)
 	staticFS, err := fs.Sub(staticFiles, "static")

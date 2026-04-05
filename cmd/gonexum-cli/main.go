@@ -93,6 +93,9 @@ Exemples:
   gonexum-cli -no-upload /data/Ma.Serie.S01E01.mkv
   gonexum-cli -yes -tmdb-id 1396 -tmdb-type tv -category 2 /data/Breaking.Bad.S01
 
+  # Queue : plusieurs sources → traitement séquentiel automatique (-yes implicite)
+  gonexum-cli /data/Film1 /data/Film2 /data/Film3
+
 Config:
   Les paramètres (API key, passkey, etc.) sont lus depuis:
     Linux/seedbox : ~/.config/GONEXUM/settings.json
@@ -106,12 +109,21 @@ Config:
 		configFilePath = *flagConfig
 	}
 
-	// Source path: flag ou argument positionnel
-	sourcePath := flag.Arg(0)
-	if sourcePath == "" {
+	// Source paths: un ou plusieurs arguments positionnels
+	sources := flag.Args()
+	if len(sources) == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	// Mode queue : plusieurs sources → traitement séquentiel, --yes implicite
+	if len(sources) > 1 {
+		runQueue(sources, *flagCategory, *flagTMDBType, *flagSource, *flagNoUpload, *flagOutput, *flagConfig,
+			*flagNFOMode, *flagNFOTemplate)
+		return
+	}
+
+	sourcePath := sources[0]
 
 	// Vérification source
 	if _, err := os.Stat(sourcePath); err != nil {
