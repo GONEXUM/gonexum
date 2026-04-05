@@ -223,94 +223,98 @@ jobs:
           path: dist
 
       - name: Create Release on public repo
-        uses: softprops/action-gh-release@v2
-        with:
-          repository: diabolino/gonexum-releases
-          token: ${{ secrets.RELEASES_REPO_TOKEN }}
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          files: |
-            dist/GONEXUM-macos-amd64/GONEXUM-${{ github.ref_name }}-macos-amd64.zip
-            dist/GONEXUM-macos-arm64/GONEXUM-${{ github.ref_name }}-macos-arm64.zip
-            dist/GONEXUM-windows-amd64/GONEXUM-${{ github.ref_name }}-windows-amd64.exe
-            dist/GONEXUM-linux-amd64/GONEXUM-${{ github.ref_name }}-linux-amd64.tar.gz
-            dist/gonexum-cli-linux-amd64/gonexum-cli-${{ github.ref_name }}-linux-amd64
-            dist/gonexum-cli-linux-arm64/gonexum-cli-${{ github.ref_name }}-linux-arm64
-            dist/gonexum-web-linux-amd64/gonexum-web-${{ github.ref_name }}-linux-amd64
-            dist/gonexum-web-linux-arm64/gonexum-web-${{ github.ref_name }}-linux-arm64
-          generate_release_notes: false
-          body: |
-            ## GONEXUM ${{ github.ref_name }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > /tmp/release_notes.md << 'NOTES'
+          ## GONEXUM TAG_PLACEHOLDER
 
-            ### Application desktop
+          ### Application desktop
 
-            | Plateforme | Fichier |
-            |---|---|
-            | macOS Apple Silicon (M1→M5) | `GONEXUM-${{ github.ref_name }}-macos-arm64.zip` |
-            | macOS Intel | `GONEXUM-${{ github.ref_name }}-macos-amd64.zip` |
-            | Windows 64-bit | `GONEXUM-${{ github.ref_name }}-windows-amd64.exe` |
-            | Linux 64-bit | `GONEXUM-${{ github.ref_name }}-linux-amd64.tar.gz` |
+          | Plateforme | Fichier |
+          |---|---|
+          | macOS Apple Silicon (M1→M5) | `GONEXUM-TAG_PLACEHOLDER-macos-arm64.zip` |
+          | macOS Intel | `GONEXUM-TAG_PLACEHOLDER-macos-amd64.zip` |
+          | Windows 64-bit | `GONEXUM-TAG_PLACEHOLDER-windows-amd64.exe` |
+          | Linux 64-bit | `GONEXUM-TAG_PLACEHOLDER-linux-amd64.tar.gz` |
 
-            ### Web (seedbox / serveur dédié)
+          ### Web (seedbox / serveur dédié)
 
-            Serveur web avec interface navigateur. Accessible depuis n'importe quel appareil sur le réseau.
-            Nécessite `mediainfo` (et optionnellement `ffprobe`) installé sur le serveur.
+          Serveur web avec interface navigateur. Accessible depuis n'importe quel appareil sur le réseau.
+          Nécessite `mediainfo` (et optionnellement `ffprobe`) installé sur le serveur.
 
-            | Plateforme | Fichier |
-            |---|---|
-            | Linux 64-bit (amd64) | `gonexum-web-${{ github.ref_name }}-linux-amd64` |
-            | Linux ARM64 (Raspberry Pi, etc.) | `gonexum-web-${{ github.ref_name }}-linux-arm64` |
+          | Plateforme | Fichier |
+          |---|---|
+          | Linux 64-bit (amd64) | `gonexum-web-TAG_PLACEHOLDER-linux-amd64` |
+          | Linux ARM64 (Raspberry Pi, etc.) | `gonexum-web-TAG_PLACEHOLDER-linux-arm64` |
 
-            **Installation rapide :**
-            ```bash
-            chmod +x gonexum-web-${{ github.ref_name }}-linux-amd64
-            sudo mv gonexum-web-${{ github.ref_name }}-linux-amd64 /usr/local/bin/gonexum-web
-            gonexum-web --host 0.0.0.0 --port 8080
-            # Puis ouvrir http://votreserveur:8080 dans le navigateur
-            ```
+          **Installation rapide :**
+          ```bash
+          chmod +x gonexum-web-TAG_PLACEHOLDER-linux-amd64
+          sudo mv gonexum-web-TAG_PLACEHOLDER-linux-amd64 /usr/local/bin/gonexum-web
+          gonexum-web --host 0.0.0.0 --port 8080
+          # Puis ouvrir http://votreserveur:8080 dans le navigateur
+          ```
 
-            ### CLI (seedbox / serveur dédié)
+          ### CLI (seedbox / serveur dédié)
 
-            Binaire standalone, sans interface graphique. Idéal pour une utilisation sur seedbox ou serveur.
-            Nécessite `mediainfo` (et optionnellement `ffprobe`) installé sur le serveur.
+          Binaire standalone, sans interface graphique. Idéal pour une utilisation sur seedbox ou serveur.
+          Nécessite `mediainfo` (et optionnellement `ffprobe`) installé sur le serveur.
 
-            | Plateforme | Fichier |
-            |---|---|
-            | Linux 64-bit (amd64) | `gonexum-cli-${{ github.ref_name }}-linux-amd64` |
-            | Linux ARM64 (Raspberry Pi, etc.) | `gonexum-cli-${{ github.ref_name }}-linux-arm64` |
+          | Plateforme | Fichier |
+          |---|---|
+          | Linux 64-bit (amd64) | `gonexum-cli-TAG_PLACEHOLDER-linux-amd64` |
+          | Linux ARM64 (Raspberry Pi, etc.) | `gonexum-cli-TAG_PLACEHOLDER-linux-arm64` |
 
-            **Installation rapide :**
-            ```bash
-            chmod +x gonexum-cli-${{ github.ref_name }}-linux-amd64
-            sudo mv gonexum-cli-${{ github.ref_name }}-linux-amd64 /usr/local/bin/gonexum-cli
-            gonexum-cli --help
-            ```
+          **Installation rapide :**
+          ```bash
+          chmod +x gonexum-cli-TAG_PLACEHOLDER-linux-amd64
+          sudo mv gonexum-cli-TAG_PLACEHOLDER-linux-amd64 /usr/local/bin/gonexum-cli
+          gonexum-cli --help
+          ```
 
-            ---
+          ---
 
-            ### Premier lancement
+          ### Premier lancement
 
-            > L'application n'est pas signée. Suivez les instructions ci-dessous selon votre système.
+          > L'application n'est pas signée. Suivez les instructions ci-dessous selon votre système.
 
-            **macOS**
-            1. Décompressez le `.zip`
-            2. Faites un **clic droit** sur `GONEXUM.app` → **Ouvrir**
-            3. Cliquez sur **Ouvrir** dans la fenêtre d'avertissement
-            4. Lors des lancements suivants, double-clic suffit
+          **macOS**
+          1. Décompressez le `.zip`
+          2. Faites un **clic droit** sur `GONEXUM.app` → **Ouvrir**
+          3. Cliquez sur **Ouvrir** dans la fenêtre d'avertissement
+          4. Lors des lancements suivants, double-clic suffit
 
-            > Si macOS affiche "application endommagée" et refuse d'ouvrir :
-            > - Allez dans **Réglages Système** → **Confidentialité et sécurité**
-            > - Faites défiler jusqu'à la section **Sécurité** et cliquez sur **Ouvrir quand même**
-            >
-            > Ou via le Terminal :
-            > ```
-            > xattr -cr /chemin/vers/GONEXUM.app
-            > ```
+          > Si macOS affiche "application endommagée" et refuse d'ouvrir :
+          > - Allez dans **Réglages Système** → **Confidentialité et sécurité**
+          > - Faites défiler jusqu'à la section **Sécurité** et cliquez sur **Ouvrir quand même**
+          >
+          > Ou via le Terminal :
+          > ```
+          > xattr -cr /chemin/vers/GONEXUM.app
+          > ```
 
-            **Windows**
-            1. Double-cliquez sur le `.exe`
-            2. Cliquez sur **Informations complémentaires** dans l'avertissement SmartScreen
-            3. Cliquez sur **Exécuter quand même**
+          **Windows**
+          1. Double-cliquez sur le `.exe`
+          2. Cliquez sur **Informations complémentaires** dans l'avertissement SmartScreen
+          3. Cliquez sur **Exécuter quand même**
+          NOTES
+
+          sed -i "s/TAG_PLACEHOLDER/${TAG}/g" /tmp/release_notes.md
+
+          gh release create "$TAG" \
+            --repo diabolino/gonexum-releases \
+            --title "$TAG" \
+            --notes-file /tmp/release_notes.md \
+            "dist/GONEXUM-macos-amd64/GONEXUM-${TAG}-macos-amd64.zip" \
+            "dist/GONEXUM-macos-arm64/GONEXUM-${TAG}-macos-arm64.zip" \
+            "dist/GONEXUM-windows-amd64/GONEXUM-${TAG}-windows-amd64.exe" \
+            "dist/GONEXUM-linux-amd64/GONEXUM-${TAG}-linux-amd64.tar.gz" \
+            "dist/gonexum-cli-linux-amd64/gonexum-cli-${TAG}-linux-amd64" \
+            "dist/gonexum-cli-linux-arm64/gonexum-cli-${TAG}-linux-arm64" \
+            "dist/gonexum-web-linux-amd64/gonexum-web-${TAG}-linux-amd64" \
+            "dist/gonexum-web-linux-arm64/gonexum-web-${TAG}-linux-arm64"
 
   virustotal:
     name: VirusTotal Scan
