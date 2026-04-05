@@ -30,11 +30,13 @@ func main() {
 		flagTMDBType   = flag.String("tmdb-type", "movie", "Type TMDB: movie ou tv")
 		flagCategory   = flag.Int("category", 1, "Catégorie: 1=Films 2=Séries 3=Docs 4=Animés")
 		flagSource     = flag.String("source", "", "Source: BluRay WEB-DL WEBRip HDTV DVDRip DCP")
-		flagNoUpload   = flag.Bool("no-upload", false, "Créer torrent+NFO sans uploader")
-		flagOutput     = flag.String("output", "", "Dossier de sortie (défaut: config)")
-		flagConfig     = flag.String("config", "", "Chemin vers settings.json")
-		flagYes        = flag.Bool("yes", false, "Non-interactif: prend le premier résultat TMDB")
+		flagNoUpload    = flag.Bool("no-upload", false, "Créer torrent+NFO sans uploader")
+		flagOutput      = flag.String("output", "", "Dossier de sortie (défaut: config)")
+		flagConfig      = flag.String("config", "", "Chemin vers settings.json")
+		flagYes         = flag.Bool("yes", false, "Non-interactif: prend le premier résultat TMDB")
 		flagNoMediaInfo = flag.Bool("no-mediainfo", false, "Ignorer l'extraction automatique des infos média")
+		flagNFOTemplate = flag.String("nfo-template", "", "Chemin vers un fichier template NFO (Go template)")
+		flagNFOMode     = flag.String("nfo-mode", "", "Mode NFO: nfo (défaut) ou mediainfo")
 	)
 
 	flag.Usage = func() {
@@ -89,6 +91,16 @@ Config:
 	}
 	if err := ensureSettings(&settings, *flagNoUpload); err != nil {
 		fatalf("%v\n", err)
+	}
+	if *flagNFOMode != "" {
+		settings.NFOMode = *flagNFOMode
+	}
+	if *flagNFOTemplate != "" {
+		tmplData, err := os.ReadFile(*flagNFOTemplate)
+		if err != nil {
+			fatalf("Impossible de lire le template NFO: %v\n", err)
+		}
+		settings.NFOTemplate = string(tmplData)
 	}
 	if *flagOutput != "" {
 		settings.OutputDir = *flagOutput

@@ -106,6 +106,78 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// POST /api/nfo/validate
+// Body: {"template": "..."}
+func handleNFOValidate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	var req struct {
+		Template string `json:"template"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonErr(w, 400, "JSON invalide")
+		return
+	}
+	_, err := renderCustomNFO(req.Template, NFOTemplateData{
+		TMDB:  TMDBDetails{Genres: []string{}},
+		Media: MediaInfo{},
+	})
+	if err != nil {
+		jsonOK(w, map[string]interface{}{"valid": false, "error": err.Error()})
+		return
+	}
+	jsonOK(w, map[string]interface{}{"valid": true})
+}
+
+// POST /api/nfo/preview
+// Body: {"template": "..."} — empty template uses settings default
+func handleNFOPreview(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	var req struct {
+		Template string `json:"template"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonErr(w, 400, "JSON invalide")
+		return
+	}
+
+	demoData := NFOTemplateData{
+		TMDB: TMDBDetails{
+			ID: 550, Title: "Fight Club", Year: "1999",
+			Director: "David Fincher",
+			Genres:   []string{"Drame", "Thriller"},
+			Overview: "Un cadre insomniaque et un savonnier charismatique fondent un club de combat clandestin qui évolue en quelque chose de bien plus inquiétant.",
+			Rating:   8.4, Runtime: 139, MediaType: "movie",
+		},
+		Media: MediaInfo{
+			Resolution: "1080p", VideoCodec: "H.264", AudioCodec: "DTS",
+			AudioLanguages: "Français, Anglais", Source: "BluRay",
+			Duration: "2h19m", FrameRate: 23.976,
+		},
+		MediaInfoCLI: "General\nFormat                   : Matroska\nDuration                 : 2 h 19 min\n\nVideo\nFormat                   : AVC\nWidth                    : 1 920 pixels\nHeight                   : 800 pixels\n\nAudio\nFormat                   : DTS\nChannel(s)               : 6 channels\n",
+	}
+
+	var content string
+	if req.Template != "" {
+		var err error
+		content, err = renderCustomNFO(req.Template, demoData)
+		if err != nil {
+			jsonErr(w, 400, err.Error())
+			return
+		}
+	} else {
+		s, _ := loadSettings()
+		content = generateNFO(demoData.TMDB, demoData.Media, demoData.MediaInfoCLI, s)
+	}
+
+	jsonOK(w, map[string]string{"content": content})
+}
+
 func jsonOK(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
