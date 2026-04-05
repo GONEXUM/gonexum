@@ -215,7 +215,7 @@ jobs:
             ### CLI (seedbox / serveur dédié)
 
             Binaire standalone, sans interface graphique. Idéal pour une utilisation sur seedbox ou serveur.
-            Nécessite `ffprobe` (et optionnellement `mediainfo`) installé sur le serveur.
+            Nécessite `mediainfo` (et optionnellement `ffprobe`) installé sur le serveur.
 
             | Plateforme | Fichier |
             |---|---|
