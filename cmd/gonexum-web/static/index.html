@@ -1158,15 +1158,17 @@ function renderTMDBResults(results) {
       </div>
       <span class="tmdb-badge">${r.mediaType === 'tv' ? 'Série' : 'Film'}</span>
     `;
-    item.onclick = () => selectTMDB(r);
+    item.onclick = (e) => selectTMDB(r, e.currentTarget);
     container.appendChild(item);
   });
   container.classList.remove('hidden');
+  // Auto-sélectionner le premier résultat
+  selectTMDB(results[0], container.firstElementChild);
 }
 
-async function selectTMDB(r) {
+async function selectTMDB(r, itemEl) {
   document.querySelectorAll('.tmdb-item').forEach(el => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+  if (itemEl) itemEl.classList.add('selected');
 
   state.tmdbId = r.id;
   state.tmdbType = r.mediaType;
