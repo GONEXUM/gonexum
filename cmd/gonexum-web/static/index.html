@@ -469,6 +469,52 @@
   }
   .source-input-row input { flex: 1; }
   .source-input-row button { flex-shrink: 0; white-space: nowrap; }
+
+  /* ── Queue ── */
+  #queuePanel { display: none; }
+  #queuePanel.active { display: block; }
+  #stepNav.hidden, #mainContainer.hidden { display: none !important; }
+
+  .queue-item {
+    background: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: border-color .2s;
+  }
+  .queue-item.running { border-color: var(--border-accent); }
+  .queue-item.done    { border-color: rgba(34,197,94,.3); }
+  .queue-item.error   { border-color: rgba(239,68,68,.3); }
+
+  .qi-header { display: flex; align-items: center; gap: 10px; }
+  .qi-status {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .qi-status.pending { background: var(--text-muted); }
+  .qi-status.running { background: var(--color-accent); animation: pulse .8s infinite; }
+  .qi-status.done    { background: var(--color-success); }
+  .qi-status.error   { background: var(--color-danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .qi-name { flex:1; font-size:13px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qi-badge {
+    font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; flex-shrink:0;
+  }
+  .qi-badge.pending { background:var(--bg-card-hover); color:var(--text-muted); }
+  .qi-badge.running { background:var(--color-accent-dim); color:var(--color-accent); border:1px solid var(--border-accent); }
+  .qi-badge.done    { background:rgba(34,197,94,.1); color:#86efac; border:1px solid rgba(34,197,94,.3); }
+  .qi-badge.error   { background:rgba(239,68,68,.1); color:#fca5a5; border:1px solid rgba(239,68,68,.3); }
+
+  .qi-progress-wrap { margin: 6px 0 4px; background:var(--bg-card); border-radius:20px; height:4px; overflow:hidden; }
+  .qi-progress      { height:100%; background:linear-gradient(90deg,var(--color-accent),var(--color-accent-hover)); border-radius:20px; transition:width .3s; }
+  .qi-log { font-size:11px; color:var(--text-muted); font-family:'SF Mono','Fira Code',monospace; margin-top:4px; }
+  .qi-result { font-size:11px; margin-top:4px; }
+  .qi-result a { color:var(--color-success); }
+  .qi-actions { display:flex; gap:6px; margin-top:6px; }
+
+  .queue-empty { text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px; }
+  .btn-queue-active { background:var(--color-accent-dim); color:var(--color-accent); border:1px solid var(--border-accent); }
 </style>
 </head>
 <body>
@@ -477,8 +523,9 @@
 <header>
   <div class="logo">GONEXUM <span id="versionBadge">Web</span></div>
   <div class="header-actions">
+    <button class="btn-ghost" id="btnQueueToggle" onclick="toggleQueueMode()">⚡ Queue <span id="queueBadge" class="hidden" style="background:var(--color-accent);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
     <button class="btn-ghost" onclick="openSettings()">⚙ Paramètres</button>
-    <button class="btn-ghost" onclick="resetAll()">↺ Nouveau</button>
+    <button class="btn-ghost" id="btnNew" onclick="resetAll()">↺ Nouveau</button>
   </div>
 </header>
 
@@ -602,8 +649,61 @@
   </div>
 </div>
 
+<!-- Queue panel -->
+<div id="queuePanel" class="container">
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>File d'attente</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="queueClearDone()">Vider terminés</button>
+      </div>
+    </div>
+
+    <!-- Add to queue form -->
+    <div style="background:var(--bg-app);border:1px solid var(--border-color);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div class="field" style="margin-bottom:10px">
+        <label>Chemin source</label>
+        <div class="source-input-row">
+          <input type="text" id="queuePath" placeholder="/data/Mon.Film.2024.1080p.BluRay.x264"
+                 onkeydown="if(event.key==='Enter')queueAdd()">
+          <button class="btn-secondary" onclick="openBrowserForQueue()">📁 Parcourir</button>
+        </div>
+      </div>
+      <div class="field-row" style="margin-bottom:10px">
+        <div class="field" style="margin:0">
+          <label>Catégorie</label>
+          <select id="queueCategory">
+            <option value="1">Films</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label>Type TMDB</label>
+          <select id="queueTmdbType">
+            <option value="movie">Film</option>
+            <option value="tv">Série</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <input type="checkbox" id="queueNoUpload" style="width:auto">
+        <label for="queueNoUpload" style="margin:0;text-transform:none;font-size:13px;cursor:pointer;color:var(--text-primary)">
+          Ne pas uploader (torrent + NFO seulement)
+        </label>
+      </div>
+      <button class="btn-primary" onclick="queueAdd()" style="width:100%">
+        + Ajouter à la queue
+      </button>
+    </div>
+
+    <!-- Queue list -->
+    <div id="queueList">
+      <div class="queue-empty">La queue est vide — ajoutez des fichiers ci-dessus</div>
+    </div>
+  </div>
+</div>
+
 <!-- Main content -->
-<div class="container">
+<div class="container" id="mainContainer">
 
   <!-- ══ STEP 1: Source ══ -->
   <div class="step-panel active" id="panel-1">
@@ -883,10 +983,9 @@ async function loadCategories() {
       appCategories = res.categories;
     }
   } catch(e) {}
-  const sel = document.getElementById('optCategory');
-  sel.innerHTML = appCategories.map(c =>
-    `<option value="${c.id}">${escHtml(c.name)}</option>`
-  ).join('');
+  const opts = appCategories.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  document.getElementById('optCategory').innerHTML = opts;
+  document.getElementById('queueCategory').innerHTML = opts;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1420,14 +1519,16 @@ const browser = {
 const VIDEO_EXTS = new Set(['.mkv','.mp4','.avi','.mov','.m2ts','.ts','.wmv','.m4v']);
 
 function openBrowser() {
+  browser.mode = browser.mode || 'wizard';
   browser.selectedPath = '';
   browser.selectedIsDir = false;
   document.getElementById('browserSelectedPath').textContent = 'Aucun élément sélectionné';
   document.getElementById('btnBrowserSelect').disabled = true;
   document.getElementById('browserOverlay').classList.remove('hidden');
 
-  // Start from current sourcePath value or root
-  const cur = document.getElementById('sourcePath').value.trim();
+  // Start from current input value or root
+  const inputId = browser.mode === 'queue' ? 'queuePath' : 'sourcePath';
+  const cur = document.getElementById(inputId).value.trim();
   const startPath = cur || '/';
   browseTo(startPath);
 }
@@ -1532,8 +1633,17 @@ function browserUp() {
 
 function confirmBrowse() {
   if (!browser.selectedPath) return;
-  document.getElementById('sourcePath').value = browser.selectedPath;
+  if (browser.mode === 'queue') {
+    document.getElementById('queuePath').value = browser.selectedPath;
+  } else {
+    document.getElementById('sourcePath').value = browser.selectedPath;
+  }
   closeBrowser();
+}
+
+function openBrowserForQueue() {
+  browser.mode = 'queue';
+  openBrowser();
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1590,6 +1700,143 @@ function escHtml(s) {
 function truncate(s, max) {
   if (!s) return '';
   return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Queue mode
+// ════════════════════════════════════════════════════════════════════
+let queueMode = false;
+let queueSSE = null;
+
+function toggleQueueMode() {
+  queueMode = !queueMode;
+  const btn = document.getElementById('btnQueueToggle');
+  const stepNav = document.getElementById('stepNav');
+  const main = document.getElementById('mainContainer');
+  const panel = document.getElementById('queuePanel');
+  const btnNew = document.getElementById('btnNew');
+
+  if (queueMode) {
+    btn.classList.add('btn-queue-active');
+    stepNav.classList.add('hidden');
+    main.classList.add('hidden');
+    panel.classList.add('active');
+    btnNew.style.display = 'none';
+    browser.mode = 'queue';
+    startQueueSSE();
+  } else {
+    btn.classList.remove('btn-queue-active');
+    stepNav.classList.remove('hidden');
+    main.classList.remove('hidden');
+    panel.classList.remove('active');
+    btnNew.style.display = '';
+    browser.mode = 'wizard';
+    stopQueueSSE();
+  }
+}
+
+function startQueueSSE() {
+  if (queueSSE) queueSSE.close();
+  queueSSE = new EventSource('/api/queue/events');
+  queueSSE.onmessage = (e) => {
+    try {
+      const items = JSON.parse(e.data);
+      renderQueueList(items);
+      updateQueueBadge(items);
+    } catch(err) {}
+  };
+  queueSSE.onerror = () => {
+    setTimeout(() => { if (queueMode) startQueueSSE(); }, 3000);
+  };
+}
+
+function stopQueueSSE() {
+  if (queueSSE) { queueSSE.close(); queueSSE = null; }
+}
+
+function updateQueueBadge(items) {
+  const badge = document.getElementById('queueBadge');
+  const pending = items ? items.filter(i => i.status === 'pending' || i.status === 'running').length : 0;
+  if (pending > 0) {
+    badge.textContent = pending;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+async function queueAdd() {
+  const path = document.getElementById('queuePath').value.trim();
+  if (!path) { alert('Veuillez entrer un chemin.'); return; }
+  const item = {
+    sourcePath:  path,
+    categoryId:  parseInt(document.getElementById('queueCategory').value),
+    tmdbType:    document.getElementById('queueTmdbType').value,
+    noUpload:    document.getElementById('queueNoUpload').checked,
+  };
+  try {
+    await api('POST', '/api/queue', item);
+    document.getElementById('queuePath').value = '';
+  } catch(e) {
+    alert('Erreur: ' + e.message);
+  }
+}
+
+async function queueRemove(id) {
+  try { await api('POST', '/api/queue/remove', { id }); } catch(e) {}
+}
+
+async function queueClearDone() {
+  try { await api('POST', '/api/queue/clear'); } catch(e) {}
+}
+
+function renderQueueList(items) {
+  const el = document.getElementById('queueList');
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div class="queue-empty">La queue est vide — ajoutez des fichiers ci-dessus</div>';
+    return;
+  }
+  el.innerHTML = items.map(it => {
+    const name = it.releaseName || it.sourcePath.split('/').pop() || it.sourcePath;
+    const statusLabel = { pending:'En attente', running:'En cours', done:'Terminé', error:'Erreur' }[it.status] || it.status;
+
+    let progress = '';
+    if (it.status === 'running') {
+      progress = `<div class="qi-progress-wrap"><div class="qi-progress" style="width:${it.progress||0}%"></div></div>`;
+    }
+
+    const lastLog = (it.log && it.log.length) ? it.log[it.log.length - 1] : '';
+    let logLine = '';
+    if ((it.status === 'running' || it.status === 'error') && lastLog) {
+      logLine = `<div class="qi-log">${escHtml(lastLog)}</div>`;
+    }
+    if (it.status === 'error' && it.error) {
+      logLine = `<div class="qi-log" style="color:var(--color-danger)">${escHtml(it.error)}</div>`;
+    }
+
+    let resultLine = '';
+    if (it.status === 'done') {
+      if (it.uploadUrl) {
+        resultLine = `<div class="qi-result">✓ <a href="${escHtml(it.uploadUrl)}" target="_blank">Voir sur nexum #${it.torrentId}</a></div>`;
+      } else {
+        resultLine = `<div class="qi-result" style="color:var(--color-success)">✓ Torrent créé</div>`;
+      }
+    }
+
+    const removeBtn = it.status === 'pending'
+      ? `<button class="btn-ghost" style="font-size:11px;padding:3px 8px" onclick="queueRemove('${it.id}')">✕ Retirer</button>`
+      : '';
+
+    return `<div class="queue-item ${it.status}">
+      <div class="qi-header">
+        <div class="qi-status ${it.status}"></div>
+        <div class="qi-name" title="${escHtml(it.sourcePath)}">${escHtml(name)}</div>
+        <span class="qi-badge ${it.status}">${statusLabel}</span>
+      </div>
+      ${progress}${logLine}${resultLine}
+      ${removeBtn ? `<div class="qi-actions">${removeBtn}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function cleanReleaseNameForSearch(name) {
