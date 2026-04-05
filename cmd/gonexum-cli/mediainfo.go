@@ -48,21 +48,60 @@ func largestVideoFile(path string) (string, error) {
 // getMediaInfo extrait les infos média.
 // Essaie d'abord mediainfo (plus répandu sur les seedboxes), puis ffprobe en fallback.
 // Retourne aussi le texte CLI de mediainfo pour le NFO (si disponible).
-func getMediaInfo(path string) (MediaInfo, string, error) {
+// Le bool indique si l'analyse a réussi (même résultat vide = SDR confirmé, pas besoin de redemander).
+func getMediaInfo(path string) (MediaInfo, string, bool, error) {
 	// Priorité 1 : mediainfo
 	mi, err := getMediaInfoFromMediainfo(path)
 	if err == nil {
 		cliText := getMediaInfoCLIText(path)
-		return mi, cliText, nil
+		return mi, cliText, true, nil
 	}
 	miErr := err
 
 	// Fallback : ffprobe
 	mi, err = getMediaInfoFFprobe(path)
 	if err != nil {
-		return MediaInfo{}, "", fmt.Errorf("mediainfo: %v — ffprobe: %v", miErr, err)
+		return MediaInfo{}, "", false, fmt.Errorf("mediainfo: %v — ffprobe: %v", miErr, err)
 	}
-	return mi, "", nil
+	return mi, "", true, nil
+}
+
+// detectSourceFromName tente de détecter la source depuis le nom du release.
+// Ex: "Fight.Club.1999.1080p.BluRay.x264" → "BluRay"
+func detectSourceFromName(name string) string {
+	upper := strings.ToUpper(name)
+
+	// Patterns avec tiret en premier (plus spécifiques)
+	switch {
+	case strings.Contains(upper, "WEB-DL"):
+		return "WEB-DL"
+	case strings.Contains(upper, "BLU-RAY"):
+		return "BluRay"
+	case strings.Contains(upper, "WEB-RIP"):
+		return "WEBRip"
+	}
+
+	// Détection par token (séparateurs: . - _ espace)
+	tokens := strings.FieldsFunc(upper, func(r rune) bool {
+		return r == '.' || r == '-' || r == '_' || r == ' '
+	})
+	for _, t := range tokens {
+		switch t {
+		case "BLURAY", "BDRIP", "BDREMUX", "REMUX", "BDMV":
+			return "BluRay"
+		case "WEBDL":
+			return "WEB-DL"
+		case "WEBRIP", "WEB":
+			return "WEBRip"
+		case "HDTV":
+			return "HDTV"
+		case "DVDRIP", "DVDSCR":
+			return "DVDRip"
+		case "DCP":
+			return "DCP"
+		}
+	}
+	return ""
 }
 
 // ════════════════════════════════════════════════════════════════
