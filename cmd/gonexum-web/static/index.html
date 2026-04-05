@@ -493,7 +493,7 @@
 
 <!-- Settings modal -->
 <div class="modal-overlay hidden" id="settingsOverlay" onclick="closeSettingsOnOverlay(event)">
-  <div class="modal">
+  <div class="modal" style="max-width:680px">
     <div class="modal-title">⚙ PARAMÈTRES</div>
     <div id="settingsAlert"></div>
     <div class="field">
@@ -512,6 +512,65 @@
       <label>Dossier de sortie (.torrent et .nfo)</label>
       <input type="text" id="cfgOutputDir" placeholder="Même dossier que la source si vide">
     </div>
+
+    <!-- NFO section -->
+    <div style="border-top:1px solid var(--border-color);margin:16px 0;padding-top:16px">
+      <div class="card-title" style="margin-bottom:12px">Format NFO</div>
+      <div class="field">
+        <label>Mode</label>
+        <div style="display:flex;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--text-primary)">
+            <input type="radio" name="nfoMode" id="nfoModeNFO" value="nfo" style="width:auto;accent-color:var(--color-accent)">
+            NFO GONEXUM
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--text-primary)">
+            <input type="radio" name="nfoMode" id="nfoModeMediaInfo" value="mediainfo" style="width:auto;accent-color:var(--color-accent)">
+            MediaInfo brut
+          </label>
+        </div>
+      </div>
+
+      <div id="nfoTemplateSection">
+        <div class="field">
+          <label>Template personnalisé <span class="text-muted">(vide = modèle par défaut)</span></label>
+          <textarea id="cfgNFOTemplate" rows="10" style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;min-height:180px"
+            placeholder="Laisser vide pour utiliser le template GONEXUM par défaut"
+            oninput="scheduleNFOValidation()"></textarea>
+          <div id="nfoValidationMsg" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+        </div>
+
+        <details style="margin-bottom:12px">
+          <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.6px;user-select:none">Variables disponibles</summary>
+          <div style="margin-top:8px;font-size:11px;font-family:'SF Mono','Fira Code',monospace;background:var(--bg-app);border:1px solid var(--border-color);border-radius:var(--radius);padding:10px;line-height:1.8;color:var(--text-secondary)">
+            <b style="color:var(--text-primary)">TMDB</b><br>
+            .TMDB.Title &nbsp;.TMDB.Year &nbsp;.TMDB.Director &nbsp;.TMDB.Overview<br>
+            .TMDB.Genres ([]string) &nbsp;.TMDB.Rating (float) &nbsp;.TMDB.Runtime (int)<br>
+            .TMDB.ID &nbsp;.TMDB.MediaType &nbsp;.TMDB.PosterPath<br><br>
+            <b style="color:var(--text-primary)">Média</b><br>
+            .Media.Resolution &nbsp;.Media.VideoCodec &nbsp;.Media.AudioCodec<br>
+            .Media.AudioLanguages &nbsp;.Media.SubtitleLanguages &nbsp;.Media.HDRFormat<br>
+            .Media.Source &nbsp;.Media.Duration &nbsp;.Media.FrameRate<br><br>
+            <b style="color:var(--text-primary)">MediaInfo CLI</b><br>
+            .MediaInfoCLI (texte brut complet)<br><br>
+            <b style="color:var(--text-primary)">Fonctions</b><br>
+            padRight "texte" 20 &nbsp;center "texte" 90 &nbsp;truncate "texte" 50<br>
+            repeat "═" 90 &nbsp;join ", " .TMDB.Genres &nbsp;printf "%.1f" .TMDB.Rating
+          </div>
+        </details>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="loadNFOStarter()" style="font-size:12px;padding:6px 12px">Modèle de départ</button>
+          <button class="btn-ghost" onclick="resetNFOTemplate()" style="font-size:12px;padding:6px 12px">Réinitialiser</button>
+          <button class="btn-secondary" onclick="previewNFO()" style="font-size:12px;padding:6px 12px">Aperçu</button>
+        </div>
+
+        <div id="nfoPreviewWrap" class="hidden" style="margin-top:10px">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:5px">Aperçu NFO</label>
+          <pre id="nfoPreviewContent" style="background:var(--bg-app);border:1px solid var(--border-color);border-radius:var(--radius);padding:12px;font-size:11px;font-family:'SF Mono','Fira Code',monospace;overflow-x:auto;max-height:300px;overflow-y:auto;color:#86efac;white-space:pre;line-height:1.4"></pre>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeSettings()">Annuler</button>
       <button class="btn-primary" onclick="saveSettingsForm()">Enregistrer</button>
@@ -874,8 +933,90 @@ async function openSettings() {
   document.getElementById('cfgApiKey').value = s.apiKey || '';
   document.getElementById('cfgTrackerURL').value = s.trackerUrl || 'https://nexum-core.com';
   document.getElementById('cfgOutputDir').value = s.outputDir || '';
+  document.getElementById('cfgNFOTemplate').value = s.nfoTemplate || '';
+  const mode = s.nfoMode || 'nfo';
+  document.querySelector(`input[name="nfoMode"][value="${mode}"]`).checked = true;
+  updateNFOModeUI(mode);
   document.getElementById('settingsAlert').innerHTML = '';
+  document.getElementById('nfoValidationMsg').innerHTML = '';
+  document.getElementById('nfoPreviewWrap').classList.add('hidden');
   document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+
+function updateNFOModeUI(mode) {
+  document.getElementById('nfoTemplateSection').style.display = mode === 'mediainfo' ? 'none' : '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[name="nfoMode"]').forEach(r => {
+    r.addEventListener('change', () => updateNFOModeUI(r.value));
+  });
+});
+
+let _nfoValidTimer = null;
+function scheduleNFOValidation() {
+  clearTimeout(_nfoValidTimer);
+  _nfoValidTimer = setTimeout(validateNFOTemplate, 500);
+}
+
+async function validateNFOTemplate() {
+  const tmpl = document.getElementById('cfgNFOTemplate').value.trim();
+  const el = document.getElementById('nfoValidationMsg');
+  if (!tmpl) { el.innerHTML = ''; return; }
+  try {
+    const r = await api('POST', '/api/nfo/validate', { template: tmpl });
+    if (r.valid) {
+      el.innerHTML = '<span style="color:var(--color-success)">✓ Template valide</span>';
+    } else {
+      el.innerHTML = `<span style="color:var(--color-danger)">✗ ${escHtml(r.error)}</span>`;
+    }
+  } catch(e) {
+    el.innerHTML = '';
+  }
+}
+
+async function previewNFO() {
+  const tmpl = document.getElementById('cfgNFOTemplate').value.trim();
+  try {
+    const r = await api('POST', '/api/nfo/preview', { template: tmpl });
+    document.getElementById('nfoPreviewContent').textContent = r.content;
+    document.getElementById('nfoPreviewWrap').classList.remove('hidden');
+  } catch(e) {
+    alert('Erreur aperçu: ' + e.message);
+  }
+}
+
+const NFO_STARTER = `╔{{ repeat "═" 90 }}╗
+║{{ center .TMDB.Title 90 }}║
+╠{{ repeat "═" 90 }}╣
+║  {{ padRight "Titre :" 16 }}{{ padRight .TMDB.Title 70 }}  ║
+║  {{ padRight "Année :" 16 }}{{ padRight .TMDB.Year 70 }}  ║
+{{ if .TMDB.Director }}║  {{ padRight "Réalisateur :" 16 }}{{ padRight .TMDB.Director 70 }}  ║
+{{ end }}{{ if .TMDB.Genres }}║  {{ padRight "Genres :" 16 }}{{ padRight (join ", " .TMDB.Genres) 70 }}  ║
+{{ end }}{{ if .TMDB.Rating }}║  {{ padRight "Note :" 16 }}{{ padRight (printf "%.1f/10" .TMDB.Rating) 70 }}  ║
+{{ end }}{{ if .TMDB.Runtime }}║  {{ padRight "Durée :" 16 }}{{ padRight (printf "%d min" .TMDB.Runtime) 70 }}  ║
+{{ end }}╠{{ repeat "═" 90 }}╣
+║{{ center "INFORMATIONS TECHNIQUES" 90 }}║
+╠{{ repeat "═" 90 }}╣
+║  {{ padRight "Résolution :" 16 }}{{ padRight .Media.Resolution 70 }}  ║
+║  {{ padRight "Vidéo :" 16 }}{{ padRight .Media.VideoCodec 70 }}  ║
+║  {{ padRight "Audio :" 16 }}{{ padRight .Media.AudioCodec 70 }}  ║
+║  {{ padRight "Langues :" 16 }}{{ padRight .Media.AudioLanguages 70 }}  ║
+{{ if .Media.HDRFormat }}║  {{ padRight "HDR :" 16 }}{{ padRight .Media.HDRFormat 70 }}  ║
+{{ end }}║  {{ padRight "Source :" 16 }}{{ padRight .Media.Source 70 }}  ║
+╠{{ repeat "═" 90 }}╣
+║{{ center "Généré par GONEXUM — nexum-core.com" 90 }}║
+╚{{ repeat "═" 90 }}╝`;
+
+function loadNFOStarter() {
+  document.getElementById('cfgNFOTemplate').value = NFO_STARTER;
+  scheduleNFOValidation();
+}
+
+function resetNFOTemplate() {
+  document.getElementById('cfgNFOTemplate').value = '';
+  document.getElementById('nfoValidationMsg').innerHTML = '';
+  document.getElementById('nfoPreviewWrap').classList.add('hidden');
 }
 
 function closeSettings() {
@@ -888,10 +1029,12 @@ function closeSettingsOnOverlay(e) {
 
 async function saveSettingsForm() {
   const s = {
-    passkey:    document.getElementById('cfgPasskey').value.trim(),
-    apiKey:     document.getElementById('cfgApiKey').value.trim(),
-    trackerUrl: document.getElementById('cfgTrackerURL').value.trim() || 'https://nexum-core.com',
-    outputDir:  document.getElementById('cfgOutputDir').value.trim(),
+    passkey:     document.getElementById('cfgPasskey').value.trim(),
+    apiKey:      document.getElementById('cfgApiKey').value.trim(),
+    trackerUrl:  document.getElementById('cfgTrackerURL').value.trim() || 'https://nexum-core.com',
+    outputDir:   document.getElementById('cfgOutputDir').value.trim(),
+    nfoMode:     document.querySelector('input[name="nfoMode"]:checked')?.value || 'nfo',
+    nfoTemplate: document.getElementById('cfgNFOTemplate').value,
   };
   if (!s.passkey) {
     document.getElementById('settingsAlert').innerHTML =

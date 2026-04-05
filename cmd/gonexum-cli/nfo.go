@@ -36,6 +36,9 @@ func renderCustomNFO(tmpl string, data NFOTemplateData) (string, error) {
 
 // generateNFO generates NFO content using custom template from settings or built-in default.
 func generateNFO(details TMDBDetails, media MediaInfo, mediaInfoCLI string, settings Settings) string {
+	if settings.NFOMode == "mediainfo" {
+		return mediaInfoCLI
+	}
 	if settings.NFOTemplate != "" {
 		result, err := renderCustomNFO(settings.NFOTemplate, NFOTemplateData{
 			TMDB:         details,

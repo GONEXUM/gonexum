@@ -57,6 +57,8 @@ Exemples:
 	http.HandleFunc("/api/tmdb/details", handleTMDBDetails)
 	http.HandleFunc("/api/process", handleProcess)
 	http.HandleFunc("/api/events", handleEvents)
+	http.HandleFunc("/api/nfo/validate", handleNFOValidate)
+	http.HandleFunc("/api/nfo/preview", handleNFOPreview)
 
 	// Static files (embedded)
 	staticFS, err := fs.Sub(staticFiles, "static")
