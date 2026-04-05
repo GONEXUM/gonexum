@@ -116,19 +116,21 @@ Config:
 	step(1, 4, "Extraction des informations média")
 	var mediaInfo MediaInfo
 	var mediaInfoCLI string
+	var mediaDetected bool
 
 	if !*flagNoMediaInfo {
 		videoPath, vidErr := largestVideoFile(sourcePath)
 		if vidErr != nil {
 			warnf("  %v\n", vidErr)
 		} else {
-			mi, cliText, miErr := getMediaInfo(videoPath)
+			mi, cliText, detected, miErr := getMediaInfo(videoPath)
 			if miErr != nil {
-				warnf("  ffprobe indisponible: %v\n", miErr)
+				warnf("  mediainfo/ffprobe indisponibles: %v\n", miErr)
 				warnf("  Les infos média devront être saisies manuellement.\n")
 			} else {
 				mediaInfo = mi
 				mediaInfoCLI = cliText
+				mediaDetected = detected
 				ok("  Résolution : %s | Vidéo : %s | Audio : %s",
 					mediaInfo.Resolution, mediaInfo.VideoCodec, mediaInfo.AudioCodec)
 				if mediaInfo.Duration != "" {
@@ -137,21 +139,31 @@ Config:
 				if mediaInfoCLI != "" {
 					ok("  mediainfo CLI : OK")
 				}
+				if mediaInfo.HDRFormat != "" {
+					ok("  HDR          : %s", mediaInfo.HDRFormat)
+				}
 			}
 		}
 	} else {
 		warnf("  Extraction média désactivée (--no-mediainfo)\n")
 	}
 
-	// Saisie manuelle si infos manquantes
-	if !*flagYes {
-		mediaInfo = promptMediaOverrides(mediaInfo)
-	}
-
-	// Source (BluRay, WEB-DL, etc.)
+	// Auto-détection de la source depuis le nom du release
 	if *flagSource != "" {
 		mediaInfo.Source = *flagSource
+	} else if mediaInfo.Source == "" {
+		if detected := detectSourceFromName(releaseName); detected != "" {
+			mediaInfo.Source = detected
+			ok("  Source       : %s (détecté)", mediaInfo.Source)
+		}
 	}
+
+	// Saisie manuelle si infos manquantes
+	if !*flagYes {
+		mediaInfo = promptMediaOverrides(mediaInfo, mediaDetected)
+	}
+
+	// Demander la source seulement si toujours inconnue
 	if mediaInfo.Source == "" && !*flagYes {
 		mediaInfo.Source = promptChoice("  Source", sources, "")
 	}
@@ -397,7 +409,9 @@ func promptChoice(label string, choices []string, defaultVal string) string {
 }
 
 // promptMediaOverrides asks user to confirm or override auto-detected media info.
-func promptMediaOverrides(mi MediaInfo) MediaInfo {
+// mediaDetected indique si mediainfo/ffprobe a tourné avec succès : dans ce cas
+// le HDR vide = SDR confirmé, pas besoin de redemander.
+func promptMediaOverrides(mi MediaInfo, mediaDetected bool) MediaInfo {
 	resolutions := []string{"2160p", "1080p", "720p", "SD"}
 	videoCodcecs := []string{"H.265", "H.264", "AV1", "VP9", "XviD"}
 	audioCodcecs := []string{"Atmos", "TrueHD", "DTS-HD MA", "DTS-HD", "DTS", "EAC3", "AC3", "FLAC", "AAC", "MP3"}
@@ -413,7 +427,9 @@ func promptMediaOverrides(mi MediaInfo) MediaInfo {
 	if mi.AudioCodec == "" {
 		mi.AudioCodec = promptChoice("  Codec audio", audioCodcecs, "DTS")
 	}
-	if mi.HDRFormat == "" {
+	// HDR : ne demander que si l'analyse n'a pas pu tourner (vide = on ne sait pas)
+	// Si mediaDetected=true et HDRFormat="" → SDR confirmé, on ne redemande pas
+	if mi.HDRFormat == "" && !mediaDetected {
 		mi.HDRFormat = promptChoice("  Format HDR (optionnel)", hdrFormats, "")
 	}
 	if mi.AudioLanguages == "" {
