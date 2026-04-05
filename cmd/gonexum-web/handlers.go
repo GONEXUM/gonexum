@@ -178,6 +178,47 @@ func handleNFOPreview(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]string{"content": content})
 }
 
+var fallbackCategories = []map[string]interface{}{
+	{"id": 1, "name": "Films", "slug": "films"},
+	{"id": 2, "name": "Séries", "slug": "series"},
+	{"id": 3, "name": "Documentaires", "slug": "documentaires"},
+	{"id": 4, "name": "Animés", "slug": "animes"},
+}
+
+// GET /api/categories — proxies nexum /api/v1/categories with fallback
+func handleCategories(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	s, _ := loadSettings()
+	if s.TrackerURL == "" {
+		s.TrackerURL = "https://nexum-core.com"
+	}
+	catURL := s.TrackerURL + "/api/v1/categories"
+	if s.APIKey != "" {
+		catURL += "?apikey=" + s.APIKey
+	}
+	req, err := http.NewRequest("GET", catURL, nil)
+	if err != nil {
+		jsonOK(w, map[string]interface{}{"categories": fallbackCategories})
+		return
+	}
+	req.Header.Set("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		jsonOK(w, map[string]interface{}{"categories": fallbackCategories})
+		return
+	}
+	defer resp.Body.Close()
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		jsonOK(w, map[string]interface{}{"categories": fallbackCategories})
+		return
+	}
+	jsonOK(w, result)
+}
+
 func jsonOK(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)

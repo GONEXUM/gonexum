@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function AppLoadSettings():Promise<main.Settings>;
 
+export function GetCategories():Promise<main.Category[]>;
+
 export function AppSaveSettings(arg1:main.Settings):Promise<void>;
 
 export function CheckUpdate():Promise<main.UpdateInfo>;

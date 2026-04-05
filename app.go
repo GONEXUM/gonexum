@@ -293,3 +293,49 @@ func (a *App) PreviewNFO(tmpl string) (string, error) {
 	}
 	return renderCustomNFO(tmpl, sample)
 }
+
+// Category represents a torrent category from the nexum API
+type Category struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+func defaultCategories() []Category {
+	return []Category{
+		{ID: 1, Name: "Films", Slug: "films"},
+		{ID: 2, Name: "Séries", Slug: "series"},
+		{ID: 3, Name: "Documentaires", Slug: "documentaires"},
+		{ID: 4, Name: "Animés", Slug: "animes"},
+	}
+}
+
+// GetCategories fetches available categories from the nexum tracker API.
+// Falls back to a hardcoded default list if the API is unreachable.
+func (a *App) GetCategories() []Category {
+	settings, err := loadSettings()
+	if err != nil || settings.TrackerURL == "" {
+		return defaultCategories()
+	}
+	catURL := settings.TrackerURL + "/api/v1/categories"
+	if settings.APIKey != "" {
+		catURL += "?apikey=" + settings.APIKey
+	}
+	req, err := http.NewRequest("GET", catURL, nil)
+	if err != nil {
+		return defaultCategories()
+	}
+	req.Header.Set("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		return defaultCategories()
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Categories []Category `json:"categories"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Categories) == 0 {
+		return defaultCategories()
+	}
+	return result.Categories
+}

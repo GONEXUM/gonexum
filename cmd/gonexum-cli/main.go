@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,12 +15,45 @@ import (
 // AppVersion est injecté au build via -ldflags "-X main.AppVersion=x.x.x"
 var AppVersion = "dev"
 
-// Catégories du tracker (même valeurs que l'app desktop)
-var categories = map[int]string{
+var defaultCategoriesMap = map[int]string{
 	1: "Films",
 	2: "Séries",
 	3: "Documentaires",
 	4: "Animés",
+}
+
+func fetchCategoriesMap(settings Settings) map[int]string {
+	if settings.TrackerURL == "" {
+		return defaultCategoriesMap
+	}
+	catURL := settings.TrackerURL + "/api/v1/categories"
+	if settings.APIKey != "" {
+		catURL += "?apikey=" + settings.APIKey
+	}
+	req, err := http.NewRequest("GET", catURL, nil)
+	if err != nil {
+		return defaultCategoriesMap
+	}
+	req.Header.Set("Accept", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		return defaultCategoriesMap
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Categories []struct {
+			ID   int    `json:"id"`
+			Name string `json:"name"`
+		} `json:"categories"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Categories) == 0 {
+		return defaultCategoriesMap
+	}
+	m := make(map[int]string, len(result.Categories))
+	for _, c := range result.Categories {
+		m[c.ID] = c.Name
+	}
+	return m
 }
 
 var sources = []string{"BluRay", "WEB-DL", "WEBRip", "HDTV", "DVDRip", "DCP"}
@@ -295,6 +330,7 @@ Config:
 		fatalf("API key non configurée.\nModifiez ~/.config/GONEXUM/settings.json ou utilisez --config.\n")
 	}
 
+	categories := fetchCategoriesMap(settings)
 	categoryID := *flagCategory
 	if catLabel, ok2 := categories[categoryID]; ok2 {
 		fmt.Printf("  Catégorie : %d — %s\n", categoryID, catLabel)

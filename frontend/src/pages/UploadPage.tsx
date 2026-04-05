@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
-  AppLoadSettings,
+  AppLoadSettings, GetCategories,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
@@ -50,12 +50,6 @@ const STEPS: { id: Step; label: string }[] = [
   { id: 'upload', label: 'Upload' },
 ]
 
-const CATEGORIES = [
-  { id: 1, label: 'Films' },
-  { id: 2, label: 'Séries' },
-  { id: 3, label: 'Documentaires' },
-  { id: 4, label: 'Animés' },
-]
 
 const RESOLUTIONS = ['2160p', '1080p', '720p', 'SD']
 const VIDEO_CODECS = ['H.265', 'H.264', 'AV1', 'VP9', 'XviD']
@@ -104,6 +98,17 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false)
   const [loadingMsg, setLoadingMsg] = useState('')
   const [error, setError] = useState('')
+
+  // Categories fetched from nexum API
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([
+    { id: 1, name: 'Films' }, { id: 2, name: 'Séries' },
+    { id: 3, name: 'Documentaires' }, { id: 4, name: 'Animés' },
+  ])
+  useEffect(() => {
+    GetCategories().then(cats => {
+      if (cats && cats.length > 0) setCategories(cats)
+    }).catch(() => {})
+  }, [])
 
   // Upload form state
   const [name, setName] = useState('')
@@ -957,7 +962,7 @@ export default function UploadPage() {
                 <div className="form-group">
                   <label className="label">Catégorie</label>
                   <select className="select" value={categoryId} onChange={e => setCategoryId(Number(e.target.value))}>
-                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">

@@ -6,6 +6,10 @@ export function AppLoadSettings() {
   return window['go']['main']['App']['AppLoadSettings']();
 }
 
+export function GetCategories() {
+  return window['go']['main']['App']['GetCategories']();
+}
+
 export function AppSaveSettings(arg1) {
   return window['go']['main']['App']['AppSaveSettings'](arg1);
 }
