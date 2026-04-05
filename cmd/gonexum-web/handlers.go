@@ -18,13 +18,24 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	homeDir, _ := os.UserHomeDir()
+	if homeDir == "" {
+		homeDir = "/"
+	}
+
 	reqPath := r.URL.Query().Get("path")
 	if reqPath == "" {
-		reqPath = "/"
+		reqPath = homeDir
 	}
 
 	// Clean and absolute
 	reqPath = filepath.Clean(reqPath)
+
+	// Clamp to home directory — prevent browsing above it
+	sep := string(filepath.Separator)
+	if reqPath != homeDir && !strings.HasPrefix(reqPath, homeDir+sep) {
+		reqPath = homeDir
+	}
 
 	fi, err := os.Stat(reqPath)
 	if err != nil {
@@ -78,8 +89,14 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
 
 	parent := ""
-	if reqPath != "/" && reqPath != filepath.Dir(reqPath) {
-		parent = filepath.Dir(reqPath)
+	if reqPath != homeDir {
+		p := filepath.Dir(reqPath)
+		// Only allow going up within home directory
+		if p == homeDir || strings.HasPrefix(p, homeDir+sep) {
+			parent = p
+		} else {
+			parent = homeDir
+		}
 	}
 
 	jsonOK(w, map[string]interface{}{

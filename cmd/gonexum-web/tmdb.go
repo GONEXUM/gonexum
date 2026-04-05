@@ -26,7 +26,8 @@ type nexumSearchResult struct {
 	ImdbURL       string          `json:"imdb_url"`
 	NoteImdb      float64         `json:"note_imdb"`
 	VoteImdb      int             `json:"vote_imdb"`
-	TmdbID        string          `json:"tmdb_id"`
+	// TmdbID peut être un string "550" ou un entier 550 selon le proxy
+	TmdbID        json.RawMessage `json:"tmdb_id"`
 	TmdbURL       string          `json:"tmdb_url"`
 	ApiURL        string          `json:"api_url"`
 	NoteTmdb      float64         `json:"note_tmdb"`
@@ -56,23 +57,39 @@ type nexusDetailResult struct {
 
 const tmdbImageBase = "https://image.tmdb.org/t/p/w200"
 
+func tmdbGet(rawURL string) ([]byte, error) {
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Referer", "https://nexum-core.com/")
+	req.Header.Set("Origin", "https://nexum-core.com")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; GONEXUM/1.0)")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+	return body, nil
+}
+
 func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	params := url.Values{}
 	params.Set("t", "search")
 	params.Set("q", query)
 
-	resp, err := http.Get(nexumTMDBBase + "?" + params.Encode())
+	body, err := tmdbGet(nexumTMDBBase + "?" + params.Encode())
 	if err != nil {
-		return nil, fmt.Errorf("erreur de connexion TMDB: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("erreur lecture réponse: %w", err)
-	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("erreur TMDB: %w", err)
 	}
 
 	var raw struct {
@@ -85,10 +102,7 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	var results []TMDBResult
 	for _, r := range raw.Results {
 		title := bestTitle(r)
-		id := 0
-		if r.TmdbID != "" {
-			id, _ = strconv.Atoi(r.TmdbID)
-		}
+		id := parseTmdbID(r.TmdbID)
 		if id == 0 {
 			continue
 		}
@@ -124,18 +138,9 @@ func getTMDBDetails(id int, mediaType string) (TMDBDetails, error) {
 	params.Set("t", t)
 	params.Set("q", strconv.Itoa(id))
 
-	resp, err := http.Get(nexumTMDBBase + "?" + params.Encode())
+	body, err := tmdbGet(nexumTMDBBase + "?" + params.Encode())
 	if err != nil {
-		return TMDBDetails{}, fmt.Errorf("erreur de connexion TMDB: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return TMDBDetails{}, fmt.Errorf("erreur lecture: %w", err)
-	}
-	if resp.StatusCode != 200 {
-		return TMDBDetails{}, fmt.Errorf("API error %d", resp.StatusCode)
+		return TMDBDetails{}, fmt.Errorf("erreur TMDB: %w", err)
 	}
 
 	var raw nexusDetailResult
@@ -186,6 +191,25 @@ func getTMDBDetails(id int, mediaType string) (TMDBDetails, error) {
 		Rating:     raw.VoteAverage,
 		Runtime:    raw.Runtime,
 	}, nil
+}
+
+// parseTmdbID handles both string ("550") and integer (550) JSON values.
+func parseTmdbID(raw json.RawMessage) int {
+	if len(raw) == 0 {
+		return 0
+	}
+	// Try integer first
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil {
+		return n
+	}
+	// Try quoted string
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		n, _ = strconv.Atoi(s)
+		return n
+	}
+	return 0
 }
 
 func bestTitle(r nexumSearchResult) string {
