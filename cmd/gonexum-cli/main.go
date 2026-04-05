@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -382,6 +383,31 @@ func printHeader() {
 	fmt.Printf("║         GONEXUM CLI %-16s ║\n", AppVersion)
 	fmt.Printf("╚══════════════════════════════════════╝\n")
 	fmt.Println()
+	checkUpdate()
+}
+
+func checkUpdate() {
+	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum-releases/releases/latest")
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	var release struct {
+		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
+	}
+	if err := json.Unmarshal(body, &release); err != nil {
+		return
+	}
+	latest := strings.TrimPrefix(release.TagName, "v")
+	current := strings.TrimPrefix(AppVersion, "v")
+	if latest != "" && latest != current && current != "dev" {
+		fmt.Printf("  ★ Nouvelle version disponible : v%s → %s\n\n", latest, release.HTMLURL)
+	}
 }
 
 func step(n, total int, label string) {
