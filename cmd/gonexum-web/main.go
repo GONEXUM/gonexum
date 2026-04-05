@@ -50,6 +50,7 @@ Exemples:
 	}
 
 	// API routes
+	http.HandleFunc("/api/version", handleVersion)
 	http.HandleFunc("/api/settings", handleSettings)
 	http.HandleFunc("/api/browse", handleBrowse)
 	http.HandleFunc("/api/mediainfo", handleMediaInfo)

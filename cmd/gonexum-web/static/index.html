@@ -991,10 +991,24 @@ async function loadCategories() {
 document.addEventListener('DOMContentLoaded', async () => {
   await checkSettings();
   await loadCategories();
-  const vb = document.getElementById('versionBadge');
-  const vm = document.querySelector('meta[name=version]');
-  if (vm) vb.textContent = 'Web ' + vm.content;
+  checkWebUpdate();
 });
+
+async function checkWebUpdate() {
+  try {
+    const v = await api('GET', '/api/version');
+    const vb = document.getElementById('versionBadge');
+    if (v.current && v.current !== 'dev') vb.textContent = 'Web ' + v.current;
+    if (v.available) {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:rgba(249,115,22,.12);border-bottom:1px solid rgba(249,115,22,.3);padding:8px 24px;font-size:12px;display:flex;align-items:center;gap:10px;';
+      banner.innerHTML = `★ Nouvelle version disponible : <strong>v${v.latest}</strong>
+        &nbsp;<a href="${v.url}" target="_blank" style="color:var(--color-accent)">Télécharger</a>
+        <button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;font-size:14px">✕</button>`;
+      document.querySelector('header').after(banner);
+    }
+  } catch(e) {}
+}
 
 async function checkSettings() {
   try {

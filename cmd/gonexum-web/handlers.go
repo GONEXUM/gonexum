@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -176,6 +177,35 @@ func handleNFOPreview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonOK(w, map[string]string{"content": content})
+}
+
+// GET /api/version — current version + update check
+func handleVersion(w http.ResponseWriter, r *http.Request) {
+	info := map[string]interface{}{
+		"current":   AppVersion,
+		"latest":    "",
+		"available": false,
+		"url":       "",
+	}
+	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum-releases/releases/latest")
+	if err == nil {
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err == nil {
+			var release struct {
+				TagName string `json:"tag_name"`
+				HTMLURL string `json:"html_url"`
+			}
+			if json.Unmarshal(body, &release) == nil {
+				latest := strings.TrimPrefix(release.TagName, "v")
+				current := strings.TrimPrefix(AppVersion, "v")
+				info["latest"] = latest
+				info["url"] = release.HTMLURL
+				info["available"] = latest != "" && latest != current && current != "dev"
+			}
+		}
+	}
+	jsonOK(w, info)
 }
 
 // ── Queue handlers ───────────────────────────────────────────────────────────
