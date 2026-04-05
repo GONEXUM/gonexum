@@ -1427,10 +1427,12 @@ function truncate(s, max) {
 }
 
 function cleanReleaseNameForSearch(name) {
-  // Remove year, resolution, codec tokens etc. to get a cleaner title
+  // Le proxy a besoin du titre + année pour trouver les résultats.
+  // On s'arrête aux tokens techniques (résolution, codec, langue, source)
+  // mais on garde l'année.
   return name
     .replace(/\.(mkv|mp4|avi|mov|m2ts|ts)$/i, '')
-    .replace(/\b(19|20)\d{2}\b.*/, '')
+    .replace(/[._\-](1080[ip]|720p|2160p|480p|4K|UHD|HDR|SDR|BluRay|BDRip|BDRemux|Remux|WEB[-.]?DL|WEBRip|HDTV|DVDRip|DCP|x264|x265|HEVC|AVC|H\.264|H\.265|DTS|AC3|AAC|TrueHD|FLAC|FRENCH|ENGLISH|MULTI|VOSTFR|TRUEFRENCH|PROPER|REPACK|INTERNAL|LIMITED).*/i, '')
     .replace(/[._-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
