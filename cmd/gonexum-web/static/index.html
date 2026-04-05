@@ -790,9 +790,6 @@
         <label>Catégorie</label>
         <select id="optCategory">
           <option value="1">Films</option>
-          <option value="2">Séries</option>
-          <option value="3">Documentaires</option>
-          <option value="4">Animés</option>
         </select>
       </div>
 
@@ -872,10 +869,30 @@ const state = {
 // ════════════════════════════════════════════════════════════════════
 //  Init
 // ════════════════════════════════════════════════════════════════════
+let appCategories = [
+  { id: 1, name: 'Films' },
+  { id: 2, name: 'Séries' },
+  { id: 3, name: 'Documentaires' },
+  { id: 4, name: 'Animés' },
+];
+
+async function loadCategories() {
+  try {
+    const res = await api('GET', '/api/categories');
+    if (res.categories && res.categories.length > 0) {
+      appCategories = res.categories;
+    }
+  } catch(e) {}
+  const sel = document.getElementById('optCategory');
+  sel.innerHTML = appCategories.map(c =>
+    `<option value="${c.id}">${escHtml(c.name)}</option>`
+  ).join('');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await checkSettings();
+  await loadCategories();
   const vb = document.getElementById('versionBadge');
-  // Try to get version from meta (injected by server if needed)
   const vm = document.querySelector('meta[name=version]');
   if (vm) vb.textContent = 'Web ' + vm.content;
 });
@@ -1232,8 +1249,8 @@ function buildSummary() {
     ? `${state.tmdbDetails.title} (${state.tmdbDetails.year || '?'})`
     : state.tmdbId > 0 ? `ID ${state.tmdbId}` : 'Aucun';
 
-  const catMap = {1:'Films',2:'Séries',3:'Documentaires',4:'Animés'};
   const catId = parseInt(document.getElementById('optCategory').value);
+  const catMap = Object.fromEntries(appCategories.map(c => [c.id, c.name]));
 
   const rows = [
     ['📁 Source',   state.sourcePath],
