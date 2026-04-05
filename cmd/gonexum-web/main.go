@@ -51,6 +51,7 @@ Exemples:
 
 	// API routes
 	http.HandleFunc("/api/settings", handleSettings)
+	http.HandleFunc("/api/browse", handleBrowse)
 	http.HandleFunc("/api/mediainfo", handleMediaInfo)
 	http.HandleFunc("/api/tmdb/search", handleTMDBSearch)
 	http.HandleFunc("/api/tmdb/details", handleTMDBDetails)

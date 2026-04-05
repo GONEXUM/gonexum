@@ -4,10 +4,90 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
+
+// GET /api/browse?path=/some/dir
+func handleBrowse(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+
+	reqPath := r.URL.Query().Get("path")
+	if reqPath == "" {
+		reqPath = "/"
+	}
+
+	// Clean and absolute
+	reqPath = filepath.Clean(reqPath)
+
+	fi, err := os.Stat(reqPath)
+	if err != nil {
+		jsonErr(w, 400, "Chemin invalide: "+err.Error())
+		return
+	}
+	if !fi.IsDir() {
+		jsonErr(w, 400, "Le chemin n'est pas un dossier")
+		return
+	}
+
+	entries, err := os.ReadDir(reqPath)
+	if err != nil {
+		jsonErr(w, 500, "Impossible de lire le dossier: "+err.Error())
+		return
+	}
+
+	type Entry struct {
+		Name  string `json:"name"`
+		Path  string `json:"path"`
+		IsDir bool   `json:"isDir"`
+		Size  int64  `json:"size"`
+		Ext   string `json:"ext"`
+	}
+
+	var dirs, files []Entry
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".") {
+			continue // skip hidden
+		}
+		fullPath := filepath.Join(reqPath, e.Name())
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		entry := Entry{
+			Name:  e.Name(),
+			Path:  fullPath,
+			IsDir: e.IsDir(),
+			Size:  info.Size(),
+			Ext:   strings.ToLower(filepath.Ext(e.Name())),
+		}
+		if e.IsDir() {
+			dirs = append(dirs, entry)
+		} else {
+			files = append(files, entry)
+		}
+	}
+
+	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name < dirs[j].Name })
+	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
+
+	parent := ""
+	if reqPath != "/" && reqPath != filepath.Dir(reqPath) {
+		parent = filepath.Dir(reqPath)
+	}
+
+	jsonOK(w, map[string]interface{}{
+		"path":    reqPath,
+		"parent":  parent,
+		"entries": append(dirs, files...),
+	})
+}
 
 func jsonOK(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
