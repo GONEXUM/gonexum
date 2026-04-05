@@ -842,6 +842,10 @@ function goStep(n) {
     if (i + 1 === n) t.classList.add('active');
   });
   state.currentStep = n;
+  if (n === 3 && !state.tmdbId) {
+    const query = document.getElementById('tmdbQuery').value.trim();
+    if (query) searchTMDB();
+  }
   if (n === 4) buildSummary();
 }
 
