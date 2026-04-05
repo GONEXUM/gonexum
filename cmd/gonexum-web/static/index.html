@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GONEXUM Web</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface2: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #eaeaea;
+    --text-muted: #888;
+    --border: #2a2a4a;
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text-muted); font-size: 12px; font-weight: 400; margin-left: 8px; }
+  .header-actions { display: flex; gap: 8px; }
+
+  /* ── Buttons ── */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity .15s, transform .1s;
+  }
+  button:hover { opacity: .85; }
+  button:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-success { background: var(--success); color: #fff; }
+  button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* ── Step nav ── */
+  .step-nav {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px 0;
+    overflow-x: auto;
+  }
+  .step-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .step-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .step-tab.done { background: var(--surface2); color: var(--text); border-color: var(--surface2); }
+
+  /* ── Main layout ── */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── Form fields ── */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--bg); }
+  textarea { min-height: 80px; resize: vertical; font-family: monospace; font-size: 12px; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media(max-width:600px) { .field-row, .field-row3 { grid-template-columns: 1fr; } }
+
+  /* ── Step panels ── */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* ── TMDB results ── */
+  .tmdb-results { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .tmdb-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .tmdb-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .tmdb-item.selected { border-color: var(--success); background: #1a3a1a; }
+  .tmdb-poster {
+    width: 40px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--border);
+  }
+  .tmdb-poster-placeholder {
+    width: 40px;
+    height: 56px;
+    border-radius: 4px;
+    background: var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .tmdb-info { flex: 1; min-width: 0; }
+  .tmdb-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tmdb-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .tmdb-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .tmdb-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #1a3a1a;
+    border: 1px solid var(--success);
+    border-radius: var(--radius);
+  }
+
+  /* ── Progress ── */
+  .progress-bar-wrap {
+    background: var(--bg);
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 20px;
+    transition: width .3s ease;
+  }
+  .log-output {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    color: #aaffaa;
+  }
+  .log-line { padding: 1px 0; }
+  .log-line.warn { color: var(--warning); }
+  .log-line.error { color: var(--error); }
+
+  /* ── Result ── */
+  .result-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-item:last-child { border-bottom: none; }
+  .result-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .result-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+  .result-value { font-family: monospace; font-size: 12px; word-break: break-all; }
+  .result-value a { color: var(--success); }
+
+  /* ── Modal (Settings) ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .alert.warning { background: #332200; border: 1px solid var(--warning); color: var(--warning); }
+  .alert.error { background: #330000; border: 1px solid var(--error); color: var(--error); }
+  .alert.success { background: #002200; border: 1px solid var(--success); color: var(--success); }
+  .alert.info { background: #001833; border: 1px solid #4488aa; color: #88ccff; }
+
+  /* ── Step actions ── */
+  .step-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-auto { background: #1a3300; color: #88cc44; border: 1px solid #44aa00; }
+
+  /* ── Spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+  .text-muted { color: var(--text-muted); }
+  .mt8 { margin-top: 8px; }
+  .flex-center { display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">GONEXUM <span id="versionBadge">Web</span></div>
+  <div class="header-actions">
+    <button class="btn-ghost" onclick="openSettings()">⚙ Paramètres</button>
+    <button class="btn-ghost" onclick="resetAll()">↺ Nouveau</button>
+  </div>
+</header>
+
+<!-- Step navigation -->
+<div class="step-nav" id="stepNav">
+  <div class="step-tab active" id="tab-1">1. Source</div>
+  <div class="step-tab" id="tab-2">2. Médias</div>
+  <div class="step-tab" id="tab-3">3. TMDB</div>
+  <div class="step-tab" id="tab-4">4. Options</div>
+  <div class="step-tab" id="tab-5">5. Traitement</div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay hidden" id="settingsOverlay" onclick="closeSettingsOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-title">⚙ PARAMÈTRES</div>
+    <div id="settingsAlert"></div>
+    <div class="field">
+      <label>Passkey nexum-core.com <span style="color:var(--accent)">*</span></label>
+      <input type="password" id="cfgPasskey" placeholder="Votre passkey">
+    </div>
+    <div class="field">
+      <label>API Key nexum-core.com</label>
+      <input type="password" id="cfgApiKey" placeholder="Requise pour uploader">
+    </div>
+    <div class="field">
+      <label>URL du tracker</label>
+      <input type="text" id="cfgTrackerURL" placeholder="https://nexum-core.com">
+    </div>
+    <div class="field">
+      <label>Dossier de sortie (.torrent et .nfo)</label>
+      <input type="text" id="cfgOutputDir" placeholder="Même dossier que la source si vide">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeSettings()">Annuler</button>
+      <button class="btn-primary" onclick="saveSettingsForm()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="container">
+
+  <!-- ══ STEP 1: Source ══ -->
+  <div class="step-panel active" id="panel-1">
+    <div class="card">
+      <div class="card-title">Source</div>
+
+      <div id="alertSettings" class="alert warning hidden">
+        ⚠ Configuration incomplète — veuillez configurer votre passkey dans les <a href="#" onclick="openSettings();return false">paramètres</a>.
+      </div>
+
+      <div class="field">
+        <label>Chemin du fichier ou dossier</label>
+        <input type="text" id="sourcePath"
+               placeholder="/data/Fight.Club.1999.1080p.BluRay.x264-TEST"
+               onkeydown="if(event.key==='Enter')analyzeSource()">
+      </div>
+      <div class="field">
+        <label>Nom du release <span class="text-muted">(optionnel — détecté automatiquement)</span></label>
+        <input type="text" id="releaseName" placeholder="Fight.Club.1999.1080p.BluRay.x264-TEST">
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-primary" id="btnAnalyze" onclick="analyzeSource()">
+          Analyser →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: Media Info ══ -->
+  <div class="step-panel" id="panel-2">
+    <div class="card">
+      <div class="card-title">Informations Média</div>
+      <div id="mediaAlert"></div>
+
+      <div class="field-row3">
+        <div class="field">
+          <label>Résolution</label>
+          <select id="miResolution">
+            <option value="">-- Non détecté --</option>
+            <option value="2160p">2160p (4K)</option>
+            <option value="1080p">1080p</option>
+            <option value="720p">720p</option>
+            <option value="480p">480p</option>
+            <option value="SD">SD</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Codec vidéo</label>
+          <select id="miVideoCodec">
+            <option value="">-- Non détecté --</option>
+            <option value="H.265">H.265 (HEVC)</option>
+            <option value="H.264">H.264 (AVC)</option>
+            <option value="AV1">AV1</option>
+            <option value="VP9">VP9</option>
+            <option value="XviD">XviD</option>
+            <option value="MPEG-2">MPEG-2</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Format HDR</label>
+          <select id="miHDR">
+            <option value="">SDR</option>
+            <option value="HDR">HDR</option>
+            <option value="HDR10">HDR10</option>
+            <option value="HDR10+">HDR10+</option>
+            <option value="DV">Dolby Vision</option>
+            <option value="HDR DV">HDR + DV</option>
+            <option value="HLG">HLG</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Codec audio</label>
+          <select id="miAudioCodec">
+            <option value="">-- Non détecté --</option>
+            <option value="Atmos">Dolby Atmos</option>
+            <option value="TrueHD">TrueHD</option>
+            <option value="DTS-HD MA">DTS-HD MA</option>
+            <option value="DTS-HD">DTS-HD</option>
+            <option value="DTS:X">DTS:X</option>
+            <option value="DTS">DTS</option>
+            <option value="EAC3">EAC3 (DD+)</option>
+            <option value="AC3">AC3 (DD)</option>
+            <option value="FLAC">FLAC</option>
+            <option value="AAC">AAC</option>
+            <option value="MP3">MP3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Source</label>
+          <select id="miSource">
+            <option value="">-- Non détecté --</option>
+            <option value="BluRay">BluRay</option>
+            <option value="WEB-DL">WEB-DL</option>
+            <option value="WEBRip">WEBRip</option>
+            <option value="HDTV">HDTV</option>
+            <option value="DVDRip">DVDRip</option>
+            <option value="DCP">DCP</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Langues audio</label>
+          <input type="text" id="miAudioLangs" placeholder="Français, Anglais">
+        </div>
+        <div class="field">
+          <label>Sous-titres</label>
+          <input type="text" id="miSubLangs" placeholder="Français (optionnel)">
+        </div>
+      </div>
+
+      <div id="miTechInfo" class="hidden">
+        <div class="field-row" style="margin-top:8px">
+          <div class="text-muted" style="font-size:12px" id="miDuration"></div>
+          <div class="text-muted" style="font-size:12px" id="miSize"></div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(1)">← Retour</button>
+        <button class="btn-primary" onclick="goStep(3)">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: TMDB ══ -->
+  <div class="step-panel" id="panel-3">
+    <div class="card">
+      <div class="card-title">Recherche TMDB</div>
+
+      <div class="field-row">
+        <div class="field" style="flex:2">
+          <label>Titre à rechercher</label>
+          <input type="text" id="tmdbQuery" placeholder="Fight Club"
+                 onkeydown="if(event.key==='Enter')searchTMDB()">
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="tmdbType">
+            <option value="movie">Film</option>
+            <option value="tv">Série</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-secondary" id="btnTMDBSearch" onclick="searchTMDB()">
+        🔍 Rechercher
+      </button>
+
+      <div id="tmdbResults" class="tmdb-results hidden"></div>
+
+      <div id="tmdbSelected" class="hidden mt8">
+        <div class="tmdb-selected-info">
+          <img id="tmdbSelectedPoster" class="tmdb-poster" src="" alt="">
+          <div>
+            <div id="tmdbSelectedTitle" style="font-weight:700"></div>
+            <div id="tmdbSelectedMeta" class="text-muted" style="font-size:12px; margin-top:4px"></div>
+            <div id="tmdbSelectedOverview" style="font-size:12px; margin-top:6px; color:#bbb"></div>
+          </div>
+        </div>
+        <button class="btn-ghost mt8" onclick="clearTMDB()">✕ Changer</button>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(2)">← Retour</button>
+        <button class="btn-primary" onclick="goStep(4)">Suivant →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: Options ══ -->
+  <div class="step-panel" id="panel-4">
+    <div class="card">
+      <div class="card-title">Options</div>
+
+      <div class="field">
+        <label>Catégorie</label>
+        <select id="optCategory">
+          <option value="1">Films</option>
+          <option value="2">Séries</option>
+          <option value="3">Documentaires</option>
+          <option value="4">Animés</option>
+        </select>
+      </div>
+
+      <div class="field" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="optNoUpload" style="width:auto">
+        <label for="optNoUpload" style="margin:0;text-transform:none;font-size:13px;cursor:pointer">
+          Ne pas uploader — créer le torrent et le NFO seulement
+        </label>
+      </div>
+
+      <!-- Summary -->
+      <div id="summary" class="mt8" style="font-size:13px; line-height:2; color:var(--text-muted)">
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-ghost" onclick="goStep(3)">← Retour</button>
+        <button class="btn-primary" id="btnProcess" onclick="startProcess()">
+          🚀 Traiter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 5: Processing ══ -->
+  <div class="step-panel" id="panel-5">
+    <div class="card">
+      <div class="card-title">Traitement en cours</div>
+
+      <div id="progressSection">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span id="progressLabel">Initialisation...</span>
+          <span id="progressPct" class="text-muted"></span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progressBar" style="width:0%"></div>
+        </div>
+        <div id="progressDetail" class="text-muted" style="font-size:11px;margin-top:4px"></div>
+      </div>
+
+      <div class="mt8">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px">Journal</div>
+        <div class="log-output" id="logOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 6: Result ══ -->
+  <div class="step-panel" id="panel-6">
+    <div class="card">
+      <div class="card-title" id="resultTitle">Résultat</div>
+      <div id="resultAlert"></div>
+      <div id="resultItems"></div>
+      <div class="step-actions">
+        <button class="btn-primary" onclick="resetAll()">↺ Nouveau torrent</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════════════════════
+const state = {
+  currentStep: 1,
+  sourcePath: '',
+  releaseName: '',
+  mediaInfo: {},
+  mediaInfoCLI: '',
+  mediaDetected: false,
+  tmdbId: 0,
+  tmdbType: 'movie',
+  tmdbDetails: null,
+};
+
+// ════════════════════════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkSettings();
+  const vb = document.getElementById('versionBadge');
+  // Try to get version from meta (injected by server if needed)
+  const vm = document.querySelector('meta[name=version]');
+  if (vm) vb.textContent = 'Web ' + vm.content;
+});
+
+async function checkSettings() {
+  try {
+    const s = await api('GET', '/api/settings');
+    if (!s.passkey) {
+      document.getElementById('alertSettings').classList.remove('hidden');
+    }
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Navigation
+// ════════════════════════════════════════════════════════════════════
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelectorAll('.step-tab').forEach((t, i) => {
+    t.classList.remove('active', 'done');
+    if (i + 1 < n) t.classList.add('done');
+    if (i + 1 === n) t.classList.add('active');
+  });
+  state.currentStep = n;
+  if (n === 4) buildSummary();
+}
+
+function resetAll() {
+  Object.assign(state, {
+    sourcePath: '', releaseName: '', mediaInfo: {}, mediaInfoCLI: '',
+    mediaDetected: false, tmdbId: 0, tmdbType: 'movie', tmdbDetails: null,
+  });
+  document.getElementById('sourcePath').value = '';
+  document.getElementById('releaseName').value = '';
+  document.getElementById('tmdbResults').innerHTML = '';
+  document.getElementById('tmdbResults').classList.add('hidden');
+  document.getElementById('tmdbSelected').classList.add('hidden');
+  document.getElementById('tmdbQuery').value = '';
+  document.getElementById('logOutput').innerHTML = '';
+  document.getElementById('progressBar').style.width = '0%';
+  goStep(1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Settings
+// ════════════════════════════════════════════════════════════════════
+async function openSettings() {
+  const s = await api('GET', '/api/settings');
+  document.getElementById('cfgPasskey').value = s.passkey || '';
+  document.getElementById('cfgApiKey').value = s.apiKey || '';
+  document.getElementById('cfgTrackerURL').value = s.trackerUrl || 'https://nexum-core.com';
+  document.getElementById('cfgOutputDir').value = s.outputDir || '';
+  document.getElementById('settingsAlert').innerHTML = '';
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.add('hidden');
+}
+
+function closeSettingsOnOverlay(e) {
+  if (e.target === e.currentTarget) closeSettings();
+}
+
+async function saveSettingsForm() {
+  const s = {
+    passkey:    document.getElementById('cfgPasskey').value.trim(),
+    apiKey:     document.getElementById('cfgApiKey').value.trim(),
+    trackerUrl: document.getElementById('cfgTrackerURL').value.trim() || 'https://nexum-core.com',
+    outputDir:  document.getElementById('cfgOutputDir').value.trim(),
+  };
+  if (!s.passkey) {
+    document.getElementById('settingsAlert').innerHTML =
+      '<div class="alert error">Le passkey est obligatoire.</div>';
+    return;
+  }
+  try {
+    await api('POST', '/api/settings', s);
+    closeSettings();
+    document.getElementById('alertSettings').classList.add('hidden');
+  } catch(e) {
+    document.getElementById('settingsAlert').innerHTML =
+      `<div class="alert error">${e.message}</div>`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Step 1: Analyze source
+// ════════════════════════════════════════════════════════════════════
+async function analyzeSource() {
+  const path = document.getElementById('sourcePath').value.trim();
+  if (!path) { alert('Veuillez entrer un chemin.'); return; }
+
+  const btn = document.getElementById('btnAnalyze');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analyse...';
+
+  try {
+    const res = await api('POST', '/api/mediainfo', { path });
+
+    state.sourcePath = path;
+    state.releaseName = document.getElementById('releaseName').value.trim()
+      || res.releaseName || '';
+    state.mediaInfo = res.mediaInfo || {};
+    state.mediaInfoCLI = res.cliText || '';
+    state.mediaDetected = res.detected || false;
+
+    // Fill step 2 form
+    setSelect('miResolution', state.mediaInfo.resolution || '');
+    setSelect('miVideoCodec', state.mediaInfo.videoCodec || '');
+    setSelect('miAudioCodec', state.mediaInfo.audioCodec || '');
+    setSelect('miHDR',        state.mediaInfo.hdrFormat  || '');
+    setSelect('miSource',     state.mediaInfo.source     || '');
+    document.getElementById('miAudioLangs').value = state.mediaInfo.audioLanguages || '';
+    document.getElementById('miSubLangs').value   = state.mediaInfo.subtitleLanguages || '';
+
+    const techDiv = document.getElementById('miTechInfo');
+    if (state.mediaInfo.duration || state.mediaInfo.fileSize) {
+      document.getElementById('miDuration').textContent =
+        state.mediaInfo.duration ? '⏱ ' + state.mediaInfo.duration : '';
+      document.getElementById('miSize').textContent =
+        state.mediaInfo.fileSize ? '💾 ' + formatBytes(state.mediaInfo.fileSize) : '';
+      techDiv.classList.remove('hidden');
+    }
+
+    // Pre-fill TMDB search with release name
+    document.getElementById('tmdbQuery').value =
+      cleanReleaseNameForSearch(state.releaseName);
+
+    // Warn if no mediainfo
+    const alert2 = document.getElementById('mediaAlert');
+    if (!res.detected) {
+      alert2.innerHTML = '<div class="alert warning">⚠ mediainfo/ffprobe non disponible — remplissez les champs manuellement.</div>';
+    } else {
+      alert2.innerHTML = res.warning
+        ? `<div class="alert warning">${res.warning}</div>` : '';
+    }
+
+    goStep(2);
+  } catch(e) {
+    alert('Erreur: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyser →';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Step 3: TMDB
+// ════════════════════════════════════════════════════════════════════
+async function searchTMDB() {
+  const query = document.getElementById('tmdbQuery').value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById('btnTMDBSearch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Recherche...';
+
+  const type = document.getElementById('tmdbType').value;
+
+  try {
+    const results = await api('POST', '/api/tmdb/search', { query, type });
+    renderTMDBResults(results);
+  } catch(e) {
+    alert('Erreur TMDB: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 Rechercher';
+  }
+}
+
+function renderTMDBResults(results) {
+  const container = document.getElementById('tmdbResults');
+  container.innerHTML = '';
+  if (!results || results.length === 0) {
+    container.innerHTML = '<div class="text-muted" style="padding:8px">Aucun résultat.</div>';
+    container.classList.remove('hidden');
+    return;
+  }
+  results.slice(0, 8).forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'tmdb-item';
+    const poster = r.posterPath
+      ? `<img class="tmdb-poster" src="${r.posterPath}" alt="" loading="lazy">`
+      : `<div class="tmdb-poster-placeholder">🎬</div>`;
+    item.innerHTML = `
+      ${poster}
+      <div class="tmdb-info">
+        <div class="tmdb-title">${escHtml(r.title)}</div>
+        <div class="tmdb-meta">${r.year || ''}${r.overview ? ' — ' + truncate(r.overview, 80) : ''}</div>
+      </div>
+      <span class="tmdb-badge">${r.mediaType === 'tv' ? 'Série' : 'Film'}</span>
+    `;
+    item.onclick = () => selectTMDB(r);
+    container.appendChild(item);
+  });
+  container.classList.remove('hidden');
+}
+
+async function selectTMDB(r) {
+  document.querySelectorAll('.tmdb-item').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  state.tmdbId = r.id;
+  state.tmdbType = r.mediaType;
+
+  try {
+    const details = await api('POST', '/api/tmdb/details', { id: r.id, type: r.mediaType });
+    state.tmdbDetails = details;
+    showTMDBSelected(details);
+  } catch(e) {
+    state.tmdbDetails = { id: r.id, title: r.title, year: r.year, mediaType: r.mediaType };
+    showTMDBSelected(state.tmdbDetails);
+  }
+}
+
+function showTMDBSelected(d) {
+  document.getElementById('tmdbSelected').classList.remove('hidden');
+  document.getElementById('tmdbResults').classList.add('hidden');
+
+  const poster = document.getElementById('tmdbSelectedPoster');
+  if (d.posterPath) {
+    poster.src = d.posterPath;
+    poster.style.display = '';
+  } else {
+    poster.style.display = 'none';
+  }
+  document.getElementById('tmdbSelectedTitle').textContent =
+    d.title + (d.year ? ` (${d.year})` : '');
+  const genres = d.genres && d.genres.length ? d.genres.join(', ') : '';
+  const rating = d.rating ? `★ ${d.rating.toFixed(1)}` : '';
+  const runtime = d.runtime ? `${d.runtime} min` : '';
+  document.getElementById('tmdbSelectedMeta').textContent =
+    [genres, rating, runtime].filter(Boolean).join(' · ');
+  document.getElementById('tmdbSelectedOverview').textContent =
+    truncate(d.overview || '', 200);
+}
+
+function clearTMDB() {
+  state.tmdbId = 0;
+  state.tmdbDetails = null;
+  document.getElementById('tmdbSelected').classList.add('hidden');
+  document.getElementById('tmdbResults').classList.remove('hidden');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Step 4: Summary
+// ════════════════════════════════════════════════════════════════════
+function buildSummary() {
+  // Collect media info from form
+  state.mediaInfo = {
+    ...state.mediaInfo,
+    resolution:        document.getElementById('miResolution').value,
+    videoCodec:        document.getElementById('miVideoCodec').value,
+    audioCodec:        document.getElementById('miAudioCodec').value,
+    hdrFormat:         document.getElementById('miHDR').value,
+    source:            document.getElementById('miSource').value,
+    audioLanguages:    document.getElementById('miAudioLangs').value,
+    subtitleLanguages: document.getElementById('miSubLangs').value,
+  };
+
+  const tmdbLabel = state.tmdbDetails
+    ? `${state.tmdbDetails.title} (${state.tmdbDetails.year || '?'})`
+    : state.tmdbId > 0 ? `ID ${state.tmdbId}` : 'Aucun';
+
+  const catMap = {1:'Films',2:'Séries',3:'Documentaires',4:'Animés'};
+  const catId = parseInt(document.getElementById('optCategory').value);
+
+  const rows = [
+    ['📁 Source',   state.sourcePath],
+    ['🎬 TMDB',     tmdbLabel],
+    ['📂 Catégorie', catMap[catId] || catId],
+    ['📺 Résolution', state.mediaInfo.resolution || '—'],
+    ['🎥 Vidéo',    state.mediaInfo.videoCodec || '—'],
+    ['🔊 Audio',    state.mediaInfo.audioCodec || '—'],
+    ['💡 HDR',      state.mediaInfo.hdrFormat || 'SDR'],
+    ['📀 Source',   state.mediaInfo.source || '—'],
+  ].map(([k,v]) =>
+    `<div><span class="text-muted">${k} :</span> <strong>${escHtml(String(v))}</strong></div>`
+  ).join('');
+
+  document.getElementById('summary').innerHTML = rows;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Step 5: Process
+// ════════════════════════════════════════════════════════════════════
+async function startProcess() {
+  const btn = document.getElementById('btnProcess');
+  btn.disabled = true;
+
+  const catId = parseInt(document.getElementById('optCategory').value);
+  const noUpload = document.getElementById('optNoUpload').checked;
+
+  const req = {
+    sourcePath:   state.sourcePath,
+    releaseName:  state.releaseName,
+    mediaInfo:    state.mediaInfo,
+    mediaInfoCLI: state.mediaInfoCLI,
+    tmdbId:       state.tmdbId,
+    tmdbType:     state.tmdbType,
+    categoryId:   catId,
+    noUpload:     noUpload,
+  };
+
+  goStep(5);
+  document.getElementById('logOutput').innerHTML = '';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressLabel').textContent = 'Démarrage...';
+  document.getElementById('progressPct').textContent = '';
+
+  try {
+    const res = await api('POST', '/api/process', req);
+    listenEvents(res.jobId);
+  } catch(e) {
+    showResult(false, null, e.message);
+  }
+}
+
+function listenEvents(jobId) {
+  const es = new EventSource('/api/events?jobId=' + jobId);
+
+  es.onmessage = (e) => {
+    const evt = JSON.parse(e.data);
+    handleJobEvent(evt);
+    if (evt.type === 'done' || evt.type === 'error') {
+      es.close();
+    }
+  };
+
+  es.addEventListener('close', () => es.close());
+
+  es.onerror = () => {
+    es.close();
+    appendLog('Connexion perdue.', 'error');
+  };
+}
+
+function handleJobEvent(evt) {
+  switch(evt.type) {
+    case 'log':
+      appendLog(evt.data.message);
+      break;
+
+    case 'progress': {
+      const p = evt.data;
+      if (p.phase === 'hashing') {
+        const pct = Math.round(p.percent || 0);
+        document.getElementById('progressLabel').textContent = 'Hachage des pièces...';
+        document.getElementById('progressPct').textContent = pct + '%';
+        document.getElementById('progressBar').style.width = pct + '%';
+        if (p.bytesDone && p.totalBytes) {
+          document.getElementById('progressDetail').textContent =
+            formatBytes(p.bytesDone) + ' / ' + formatBytes(p.totalBytes);
+        }
+      } else if (p.phase === 'writing') {
+        document.getElementById('progressLabel').textContent = 'Écriture du fichier .torrent...';
+        document.getElementById('progressBar').style.width = '100%';
+        document.getElementById('progressPct').textContent = '100%';
+      }
+      break;
+    }
+
+    case 'done':
+      document.getElementById('progressBar').style.width = '100%';
+      showResult(true, evt.data, null);
+      break;
+
+    case 'error':
+      showResult(false, null, evt.data.message);
+      break;
+  }
+}
+
+function appendLog(msg, cls) {
+  const out = document.getElementById('logOutput');
+  const line = document.createElement('div');
+  line.className = 'log-line' + (cls ? ' ' + cls : '');
+  line.textContent = '› ' + msg;
+  out.appendChild(line);
+  out.scrollTop = out.scrollHeight;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Step 6: Result
+// ════════════════════════════════════════════════════════════════════
+function showResult(success, data, errMsg) {
+  goStep(6);
+
+  const titleEl = document.getElementById('resultTitle');
+  const alertEl = document.getElementById('resultAlert');
+  const itemsEl = document.getElementById('resultItems');
+
+  if (!success) {
+    titleEl.textContent = '✕ Erreur';
+    alertEl.innerHTML = `<div class="alert error">${escHtml(errMsg)}</div>`;
+    itemsEl.innerHTML = '';
+    return;
+  }
+
+  titleEl.textContent = data.noUpload ? '✔ Torrent créé' : '✔ Upload réussi';
+  alertEl.innerHTML = '';
+
+  const items = [];
+
+  if (data.name) items.push(['Nom', data.name]);
+  if (data.infoHash) items.push(['InfoHash', data.infoHash]);
+  if (data.size) items.push(['Taille', formatBytes(data.size)]);
+  if (data.torrentPath) items.push(['Torrent', data.torrentPath]);
+  if (data.nfoPath) items.push(['NFO', data.nfoPath]);
+  if (data.torrentId) items.push(['ID', String(data.torrentId)]);
+  if (data.uploadUrl) items.push(['URL', `<a href="${escHtml(data.uploadUrl)}" target="_blank">${escHtml(data.uploadUrl)}</a>`]);
+
+  itemsEl.innerHTML = items.map(([label, value]) => `
+    <div class="result-item">
+      <div class="result-icon">${label === 'URL' ? '🔗' : label === 'Torrent' ? '📄' : label === 'NFO' ? '📝' : '▸'}</div>
+      <div>
+        <div class="result-label">${label}</div>
+        <div class="result-value">${value}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  API helper
+// ════════════════════════════════════════════════════════════════════
+async function api(method, url, body) {
+  const opts = { method, headers: {} };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur ' + res.status);
+  return data;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Helpers
+// ════════════════════════════════════════════════════════════════════
+function setSelect(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (const opt of el.options) {
+    if (opt.value === value) { el.value = value; return; }
+  }
+  // Value not in list — add it
+  if (value) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    el.appendChild(opt);
+    el.value = value;
+  }
+}
+
+function formatBytes(b) {
+  if (!b) return '0 B';
+  const k = 1024;
+  const sizes = ['B','KB','MB','GB','TB'];
+  let i = 0, f = b;
+  while (f >= k && i < sizes.length - 1) { f /= k; i++; }
+  return f.toFixed(2) + ' ' + sizes[i];
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function truncate(s, max) {
+  if (!s) return '';
+  return s.length > max ? s.slice(0, max) + '…' : s;
+}
+
+function cleanReleaseNameForSearch(name) {
+  // Remove year, resolution, codec tokens etc. to get a cleaner title
+  return name
+    .replace(/\.(mkv|mp4|avi|mov|m2ts|ts)$/i, '')
+    .replace(/\b(19|20)\d{2}\b.*/, '')
+    .replace(/[._-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+</script>
+</body>
+</html>
