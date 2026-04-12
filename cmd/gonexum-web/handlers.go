@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+// browseRoot is the root directory for the file browser.
+// Set via --browse-root flag (default: user home dir).
+var browseRoot string
+
 // GET /api/browse?path=/some/dir
 func handleBrowse(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -19,23 +23,26 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	homeDir, _ := os.UserHomeDir()
-	if homeDir == "" {
-		homeDir = "/"
+	root := browseRoot
+	if root == "" {
+		root, _ = os.UserHomeDir()
+		if root == "" {
+			root = "/"
+		}
 	}
 
 	reqPath := r.URL.Query().Get("path")
 	if reqPath == "" {
-		reqPath = homeDir
+		reqPath = root
 	}
 
 	// Clean and absolute
 	reqPath = filepath.Clean(reqPath)
 
-	// Clamp to home directory — prevent browsing above it
+	// Clamp to browse root — prevent browsing above it
 	sep := string(filepath.Separator)
-	if reqPath != homeDir && !strings.HasPrefix(reqPath, homeDir+sep) {
-		reqPath = homeDir
+	if reqPath != root && !strings.HasPrefix(reqPath, root+sep) {
+		reqPath = root
 	}
 
 	fi, err := os.Stat(reqPath)
@@ -90,13 +97,12 @@ func handleBrowse(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
 
 	parent := ""
-	if reqPath != homeDir {
+	if reqPath != root {
 		p := filepath.Dir(reqPath)
-		// Only allow going up within home directory
-		if p == homeDir || strings.HasPrefix(p, homeDir+sep) {
+		if p == root || strings.HasPrefix(p, root+sep) {
 			parent = p
 		} else {
-			parent = homeDir
+			parent = root
 		}
 	}
 

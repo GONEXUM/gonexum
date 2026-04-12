@@ -17,9 +17,10 @@ var staticFiles embed.FS
 var AppVersion = "dev"
 
 func main() {
-	flagPort   := flag.Int("port", 8080, "Port d'écoute HTTP")
-	flagHost   := flag.String("host", "127.0.0.1", "Adresse d'écoute (0.0.0.0 pour accès réseau)")
-	flagConfig := flag.String("config", "", "Chemin vers settings.json")
+	flagPort       := flag.Int("port", 8080, "Port d'écoute HTTP")
+	flagHost       := flag.String("host", "127.0.0.1", "Adresse d'écoute (0.0.0.0 pour accès réseau)")
+	flagConfig     := flag.String("config", "", "Chemin vers settings.json")
+	flagBrowseRoot := flag.String("browse-root", "", "Racine du navigateur de fichiers (défaut: home de l'utilisateur)")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `GONEXUM Web — Interface web pour création et upload de torrents
@@ -47,6 +48,9 @@ Exemples:
 
 	if *flagConfig != "" {
 		configFilePath = *flagConfig
+	}
+	if *flagBrowseRoot != "" {
+		browseRoot = *flagBrowseRoot
 	}
 
 	// API routes
