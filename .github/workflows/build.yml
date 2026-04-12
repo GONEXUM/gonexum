@@ -243,8 +243,8 @@ jobs:
           push: true
           build-args: VERSION=${{ github.ref_name }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/gonexum-web:${{ steps.version.outputs.tag }}
-            ghcr.io/${{ github.repository_owner }}/gonexum-web:latest
+            ghcr.io/${{ github.repository_owner }}/gonexum-releases:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ github.repository_owner }}/gonexum-releases:latest
 
   release:
     name: Publish Release
@@ -303,7 +303,7 @@ jobs:
             -p 8566:8566 \
             -v /data/media:/data \
             -v gonexum-config:/config \
-            ghcr.io/diabolino/gonexum-web:latest
+            ghcr.io/diabolino/gonexum-releases:latest
           # Ouvrir http://votreserveur:8566
           ```
 
@@ -311,7 +311,7 @@ jobs:
           ```yaml
           services:
             gonexum-web:
-              image: ghcr.io/diabolino/gonexum-web:latest
+              image: ghcr.io/diabolino/gonexum-releases:latest
               ports:
                 - "8566:8566"
               volumes:
