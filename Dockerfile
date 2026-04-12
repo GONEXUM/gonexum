@@ -22,4 +22,4 @@ VOLUME ["/data", "/config"]
 
 EXPOSE 8566
 
-ENTRYPOINT ["gonexum-web", "--host", "0.0.0.0", "--port", "8566", "--config", "/config/settings.json"]
+ENTRYPOINT ["gonexum-web", "--host", "0.0.0.0", "--port", "8566", "--config", "/config/settings.json", "--browse-root", "/"]
