@@ -41,43 +41,40 @@ func parseMediaInfoSections(text string) []miSection {
 
 // generateBBCodeDescription generates a BBCode technical description from
 // the release name and the raw mediainfo CLI output.
+// Output uses nexum-core.com banner images as section separators.
 func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 	if mediaInfoCLI == "" {
 		return ""
 	}
 
 	sections := parseMediaInfoSections(mediaInfoCLI)
-
-	// Clean release name for display
-	cleanName := releaseName
-	for _, ext := range []string{".mkv", ".mp4", ".avi", ".ts", ".m2ts", ".MKV", ".MP4"} {
-		cleanName = strings.TrimSuffix(cleanName, ext)
-	}
-	cleanName = strings.NewReplacer(".", " ", "_", " ").Replace(cleanName)
-
 	var lines []string
-	lines = append(lines, fmt.Sprintf("[h1][b]%s[/b][/h1]", cleanName))
-	lines = append(lines, "[hr]")
 
 	// ── General ──
 	for _, s := range sections {
 		if s.name != "General" {
 			continue
 		}
-		lines = append(lines, "[b][color=#1E90FF]► INFORMATIONS GÉNÉRALES[/color][/b]")
-		lines = append(lines, "[list]")
+		lines = append(lines, "[img]https://nexum-core.com/img/banners/general.svg[/img]")
+		lines = append(lines, "")
 		if v := firstOf(s, "File name", "Complete name"); v != "" {
-			// Extract just the filename from full path
 			if i := strings.LastIndexAny(v, "/\\"); i >= 0 {
 				v = v[i+1:]
 			}
-			lines = append(lines, "[*][b]Nom du fichier :[/b] "+v)
+			lines = append(lines, "[b]Nom du fichier :[/b] [i]"+v+"[/i]")
 		}
-		addField(&lines, s, "Format", "Format")
-		addField(&lines, s, "File size", "Taille")
-		addField(&lines, s, "Duration", "Durée")
-		addField(&lines, s, "Overall bit rate", "Débit global")
-		lines = append(lines, "[/list]")
+		if v := s.fields["Format"]; v != "" {
+			lines = append(lines, "[b]Format :[/b] [i]"+v+"[/i]")
+		}
+		if v := s.fields["File size"]; v != "" {
+			lines = append(lines, "[b]Taille :[/b] [i]"+v+"[/i]")
+		}
+		if v := s.fields["Duration"]; v != "" {
+			lines = append(lines, "[b]Durée :[/b] [i]"+v+"[/i]")
+		}
+		if v := s.fields["Overall bit rate"]; v != "" {
+			lines = append(lines, "[b]Débit global :[/b] [i]"+v+"[/i]")
+		}
 		break
 	}
 
@@ -86,25 +83,35 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 		if s.name != "Video" {
 			continue
 		}
-		lines = append(lines, "[b][color=#1E90FF]► VIDÉO[/color][/b]")
-		lines = append(lines, "[list]")
-		codec := firstOf(s, "Commercial name", "Format")
+		lines = append(lines, "")
+		lines = append(lines, "[img]https://nexum-core.com/img/banners/video.svg[/img]")
+		lines = append(lines, "")
+		codec := firstOf(s, "Format")
+		profile := firstOf(s, "Format profile")
 		if codec != "" {
-			lines = append(lines, "[*][b]Codec :[/b] "+codec)
+			label := codec
+			if profile != "" {
+				label += " - Profil " + profile
+			}
+			lines = append(lines, "[b]Codec :[/b] [i]"+label+"[/i]")
+		}
+		w := stripNonDigit(s.fields["Width"])
+		h := stripNonDigit(s.fields["Height"])
+		if w != "" && h != "" {
+			lines = append(lines, "[b]Résolution :[/b] [i]"+w+"x"+h+"[/i]")
 		}
 		if v := firstOf(s, "HDR format"); v != "" {
-			lines = append(lines, "[*][b]HDR :[/b] "+v)
+			lines = append(lines, "[b]HDR :[/b] [i]"+v+"[/i]")
 		}
-		w := s.fields["Width"]
-		h := s.fields["Height"]
-		if w != "" && h != "" {
-			lines = append(lines, fmt.Sprintf("[*][b]Résolution :[/b] %s x %s", w, h))
+		if v := s.fields["Frame rate"]; v != "" {
+			lines = append(lines, "[b]Fréquence d'images :[/b] [i]"+v+"[/i]")
 		}
-		addField(&lines, s, "Display aspect ratio", "Ratio d'affichage")
-		addField(&lines, s, "Frame rate", "Fréquence d'images")
-		addField(&lines, s, "Bit rate", "Débit vidéo")
-		addField(&lines, s, "Bit depth", "Profondeur des couleurs")
-		lines = append(lines, "[/list]")
+		if v := s.fields["Bit rate"]; v != "" {
+			lines = append(lines, "[b]Débit vidéo :[/b] [i]"+v+"[/i]")
+		}
+		if v := s.fields["Bit depth"]; v != "" {
+			lines = append(lines, "[b]Profondeur des couleurs :[/b] [i]"+v+"[/i]")
+		}
 		break
 	}
 
@@ -116,12 +123,9 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 		}
 	}
 	if len(audios) > 0 {
-		pl := ""
-		if len(audios) > 1 {
-			pl = "s"
-		}
-		lines = append(lines, fmt.Sprintf("[b][color=#1E90FF]► AUDIO (%d Piste%s)[/color][/b]", len(audios), pl))
-		lines = append(lines, "[list]")
+		lines = append(lines, "")
+		lines = append(lines, "[img]https://nexum-core.com/img/banners/audio.svg[/img]")
+		lines = append(lines, "")
 		for _, a := range audios {
 			lang := a.fields["Language"]
 			if lang == "" {
@@ -136,18 +140,13 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 			if v := a.fields["Bit rate"]; v != "" {
 				br = " @ " + v
 			}
-			def := ""
-			if a.fields["Default"] == "Yes" {
-				def = " [i](Par défaut)[/i]"
-			}
-			entry := fmt.Sprintf("[*][b]%s :[/b] %s", lang, format)
+			entry := lang + " : " + format
 			if ch != "" {
 				entry += " - " + ch
 			}
-			entry += br + def
+			entry += br
 			lines = append(lines, entry)
 		}
-		lines = append(lines, "[/list]")
 	}
 
 	// ── Subtitles ──
@@ -158,19 +157,11 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 		}
 	}
 	if len(subs) > 0 {
-		pl := ""
-		if len(subs) > 1 {
-			pl = "s"
-		}
-		lines = append(lines, fmt.Sprintf("[b][color=#1E90FF]► SOUS-TITRES (%d Piste%s)[/color][/b]", len(subs), pl))
-		lines = append(lines, "[list]")
-
-		fmtSet := map[string]bool{}
+		lines = append(lines, "")
+		lines = append(lines, "[img]https://nexum-core.com/img/banners/subtitles.svg[/img]")
+		lines = append(lines, "")
 		var trackLabels []string
 		for _, s := range subs {
-			if f := s.fields["Format"]; f != "" {
-				fmtSet[f] = true
-			}
 			lang := s.fields["Language"]
 			if lang == "" {
 				lang = "Inconnu"
@@ -179,28 +170,25 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 			if s.fields["Forced"] == "Yes" {
 				extras = append(extras, "Forcés")
 			}
-			if s.fields["Default"] == "Yes" && len(subs) > 1 {
-				extras = append(extras, "Par défaut")
-			}
 			if len(extras) > 0 {
 				trackLabels = append(trackLabels, lang+" ("+strings.Join(extras, ", ")+")")
 			} else {
 				trackLabels = append(trackLabels, lang)
 			}
 		}
-		var fmtList []string
-		for f := range fmtSet {
-			fmtList = append(fmtList, f)
-		}
-		if len(fmtList) > 0 {
-			lines = append(lines, "[*][b]Format :[/b] "+strings.Join(fmtList, ", "))
-		}
-		lines = append(lines, "[*][b]Pistes incluses :[/b] "+strings.Join(trackLabels, ", "))
-		lines = append(lines, "[/list]")
+		lines = append(lines, strings.Join(trackLabels, ", "))
 	}
 
-	lines = append(lines, "[hr]")
+	lines = append(lines, "")
 	return strings.Join(lines, "\n")
+}
+
+// stripNonDigit removes non-digit characters (spaces, "pixels", etc.) from a value.
+func stripNonDigit(s string) string {
+	// "1 920 pixels" → "1920"
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.TrimSuffix(s, "pixels")
+	return strings.TrimSpace(s)
 }
 
 // bbcodeOrOverview returns BBCode description if mediainfo is available,
