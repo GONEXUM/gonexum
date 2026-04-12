@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
-  AppLoadSettings, GetCategories,
+  AppLoadSettings, GetCategories, GenerateBBCode,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
@@ -228,12 +228,13 @@ export default function UploadPage() {
       try { await SaveNFO(nfo, torrent.name) } catch { /* non bloquant */ }
 
       upd({ step: 'Upload…' })
+      const bbDesc = await GenerateBBCode(torrent.name, cliText).catch(() => '')
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,
         name: torrent.name,
         categoryId: catId,
-        description: tmdb.overview || '',
+        description: bbDesc || tmdb.overview || '',
         tmdbId: tmdb.id || 0,
         tmdbType,
         resolution: (mi as any).resolution || '',
@@ -455,12 +456,13 @@ export default function UploadPage() {
     try {
       const nfo = nfoContent || await GenerateNFO(tmdbDetails || {} as main.TMDBDetails, mediaInfo || {} as main.MediaInfo, mediaInfoCLIText)
       try { await SaveNFO(nfo, name) } catch { /* non bloquant */ }
+      const bbDesc = await GenerateBBCode(name, mediaInfoCLIText).catch(() => '')
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,
         name,
         categoryId,
-        description: description || tmdbDetails?.overview || '',
+        description: description || bbDesc || tmdbDetails?.overview || '',
         tmdbId: tmdbDetails?.id || 0,
         tmdbType,
         resolution,

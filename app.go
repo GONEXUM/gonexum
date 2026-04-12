@@ -198,6 +198,12 @@ func (a *App) GetAppVersion() string {
 	return "v" + strings.TrimPrefix(AppVersion, "v")
 }
 
+// GenerateBBCode generates a BBCode technical description from
+// the release name and the raw mediainfo CLI output.
+func (a *App) GenerateBBCode(releaseName, mediaInfoCLI string) string {
+	return generateBBCodeDescription(releaseName, mediaInfoCLI)
+}
+
 // SaveNFO writes NFO content to the output directory as "<baseName>.nfo".
 // baseName should be the release name without any extension.
 // Returns the absolute path of the written file.
