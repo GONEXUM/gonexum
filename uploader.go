@@ -43,19 +43,29 @@ func (a *App) UploadTorrent(params UploadParams) (UploadResponse, error) {
 		return UploadResponse{}, fmt.Errorf("failed to attach NFO file: %w", err)
 	}
 
+	// Ensure description (required, min 10 chars)
+	desc := params.Description
+	if len(desc) < 10 {
+		desc = params.NFOContent
+	}
+	if len(desc) < 10 {
+		desc = "Upload via GONEXUM"
+	}
+	if len(desc) > 10000 {
+		desc = desc[:10000]
+	}
+	tmdbType := params.TMDBType
+	if tmdbType == "" {
+		tmdbType = "movie"
+	}
+
 	// Add string fields
 	fields := map[string]string{
 		"name":        normalizeName(params.Name),
 		"category_id": strconv.Itoa(params.CategoryID),
-	}
-	if params.Description != "" {
-		fields["description"] = params.Description
-	}
-	if params.TMDBId > 0 {
-		fields["tmdb_id"] = strconv.Itoa(params.TMDBId)
-	}
-	if params.TMDBType != "" {
-		fields["tmdb_type"] = params.TMDBType
+		"description": desc,
+		"tmdb_id":     strconv.Itoa(params.TMDBId),
+		"tmdb_type":   tmdbType,
 	}
 	if params.Resolution != "" {
 		fields["resolution"] = params.Resolution

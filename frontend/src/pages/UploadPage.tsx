@@ -233,7 +233,7 @@ export default function UploadPage() {
         nfoContent: nfo,
         name: torrent.name,
         categoryId: catId,
-        description: '',
+        description: tmdb.overview || '',
         tmdbId: tmdb.id || 0,
         tmdbType,
         resolution: (mi as any).resolution || '',
@@ -460,7 +460,7 @@ export default function UploadPage() {
         nfoContent: nfo,
         name,
         categoryId,
-        description,
+        description: description || tmdbDetails?.overview || '',
         tmdbId: tmdbDetails?.id || 0,
         tmdbType,
         resolution,
@@ -973,15 +973,15 @@ export default function UploadPage() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="label">Description (BBCode supporté, max 5000 car.)</label>
+                  <label className="label">Description (BBCode supporté, max 10000 car.)</label>
                   <textarea
                     className="textarea"
                     value={description}
-                    onChange={e => setDescription(e.target.value.slice(0, 5000))}
+                    onChange={e => setDescription(e.target.value.slice(0, 10000))}
                     placeholder="Description optionnelle..."
                     rows={4}
                   />
-                  <span className="text-xs text-muted">{description.length}/5000</span>
+                  <span className="text-xs text-muted">{description.length}/10000</span>
                 </div>
               </div>
             </div>

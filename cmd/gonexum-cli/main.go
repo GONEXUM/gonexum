@@ -354,6 +354,7 @@ Config:
 		NFOContent:        nfoContent,
 		Name:              torrentResult.Name,
 		CategoryID:        categoryID,
+		Description:       tmdbDetails.Overview,
 		TMDBId:            tmdbDetails.ID,
 		TMDBType:          tmdbType,
 		Resolution:        mediaInfo.Resolution,
