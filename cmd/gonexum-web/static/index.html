@@ -893,6 +893,15 @@
         </select>
       </div>
 
+      <div class="field">
+        <label>Description (BBCode supporté, max 10000 car.)</label>
+        <textarea id="optDescription" rows="6"
+          style="font-family:'SF Mono','Fira Code',monospace;font-size:11px;min-height:120px"
+          placeholder="Pré-remplie automatiquement avec les infos techniques..."
+          oninput="this.value=this.value.slice(0,10000);document.getElementById('descCount').textContent=this.value.length"></textarea>
+        <span id="descCount" style="font-size:11px;color:var(--text-muted)">0</span><span style="font-size:11px;color:var(--text-muted)">/10000</span>
+      </div>
+
       <div class="field" style="display:flex;align-items:center;gap:10px">
         <input type="checkbox" id="optNoUpload" style="width:auto">
         <label for="optNoUpload" style="margin:0;text-transform:none;font-size:13px;cursor:pointer">
@@ -1035,7 +1044,24 @@ function goStep(n) {
     const query = document.getElementById('tmdbQuery').value.trim();
     if (query) searchTMDB();
   }
-  if (n === 4) buildSummary();
+  if (n === 4) {
+    prefillDescription();
+    buildSummary();
+  }
+}
+
+async function prefillDescription() {
+  const el = document.getElementById('optDescription');
+  if (el.value.trim()) return; // already has content
+  if (!state.mediaInfoCLI) return;
+  try {
+    const name = state.releaseName || state.sourcePath.split('/').pop() || '';
+    const r = await api('POST', '/api/nfo/bbcode', { releaseName: name, mediaInfoCLI: state.mediaInfoCLI });
+    if (r.content) {
+      el.value = r.content;
+      document.getElementById('descCount').textContent = r.content.length;
+    }
+  } catch(e) {}
 }
 
 function resetAll() {
@@ -1400,6 +1426,7 @@ async function startProcess() {
     tmdbType:     state.tmdbType,
     categoryId:   catId,
     noUpload:     noUpload,
+    description:  document.getElementById('optDescription').value.trim(),
   };
 
   goStep(5);

@@ -75,14 +75,15 @@ func (j *Job) finish() {
 
 // ProcessRequest is sent by the client to /api/process
 type ProcessRequest struct {
-	SourcePath  string    `json:"sourcePath"`
-	ReleaseName string    `json:"releaseName"`
-	MediaInfo   MediaInfo `json:"mediaInfo"`
-	MediaInfoCLI string   `json:"mediaInfoCLI"`
-	TMDBId      int       `json:"tmdbId"`
-	TMDBType    string    `json:"tmdbType"`
-	CategoryID  int       `json:"categoryId"`
-	NoUpload    bool      `json:"noUpload"`
+	SourcePath   string    `json:"sourcePath"`
+	ReleaseName  string    `json:"releaseName"`
+	MediaInfo    MediaInfo `json:"mediaInfo"`
+	MediaInfoCLI string    `json:"mediaInfoCLI"`
+	TMDBId       int       `json:"tmdbId"`
+	TMDBType     string    `json:"tmdbType"`
+	CategoryID   int       `json:"categoryId"`
+	NoUpload     bool      `json:"noUpload"`
+	Description  string    `json:"description"`
 }
 
 func runJob(job *Job, req ProcessRequest) {
@@ -150,7 +151,12 @@ func runJob(job *Job, req ProcessRequest) {
 		NFOContent:        nfoContent,
 		Name:              torrentResult.Name,
 		CategoryID:        req.CategoryID,
-		Description:       bbcodeOrOverview(req.ReleaseName, req.MediaInfoCLI, tmdbDetails.Overview),
+		Description: func() string {
+			if req.Description != "" {
+				return req.Description
+			}
+			return bbcodeOrOverview(req.ReleaseName, req.MediaInfoCLI, tmdbDetails.Overview)
+		}(),
 		TMDBId:            req.TMDBId,
 		TMDBType:          req.TMDBType,
 		Resolution:        req.MediaInfo.Resolution,

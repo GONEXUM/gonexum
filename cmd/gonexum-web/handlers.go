@@ -355,6 +355,24 @@ func handleCategories(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, result)
 }
 
+// POST /api/nfo/bbcode — generate BBCode description from mediainfo
+func handleNFOBBCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	var req struct {
+		ReleaseName  string `json:"releaseName"`
+		MediaInfoCLI string `json:"mediaInfoCLI"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonErr(w, 400, "JSON invalide")
+		return
+	}
+	content := generateBBCodeDescription(req.ReleaseName, req.MediaInfoCLI)
+	jsonOK(w, map[string]string{"content": content})
+}
+
 func jsonOK(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
