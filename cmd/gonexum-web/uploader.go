@@ -108,27 +108,8 @@ func uploadTorrent(params UploadParams, settings Settings) (UploadResponse, erro
 	}
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
-		var errResp struct {
-			Message string              `json:"message"`
-			Error   string              `json:"error"`
-			Errors  map[string][]string `json:"errors"`
-		}
-		_ = json.Unmarshal(respBody, &errResp)
-		msg := errResp.Message
-		if msg == "" {
-			msg = errResp.Error
-		}
-		if len(errResp.Errors) > 0 {
-			for field, msgs := range errResp.Errors {
-				for _, m := range msgs {
-					msg += "\n  " + field + ": " + m
-				}
-			}
-		}
-		if msg == "" {
-			msg = string(respBody)
-		}
-		return UploadResponse{}, fmt.Errorf("server error %d: %s", resp.StatusCode, msg)
+		msg := parseUploadError(respBody, resp.StatusCode)
+		return UploadResponse{}, fmt.Errorf("%s", msg)
 	}
 
 	var result UploadResponse
@@ -136,6 +117,38 @@ func uploadTorrent(params UploadParams, settings Settings) (UploadResponse, erro
 		return UploadResponse{}, fmt.Errorf("failed to parse server response: %w", err)
 	}
 	return result, nil
+}
+
+func parseUploadError(body []byte, status int) string {
+	var errResp struct {
+		Message  string              `json:"message"`
+		Error    string              `json:"error"`
+		Errors   map[string][]string `json:"errors"`
+		Name     string              `json:"name"`
+		Warnings []string            `json:"warnings"`
+	}
+	_ = json.Unmarshal(body, &errResp)
+	msg := errResp.Message
+	if msg == "" {
+		msg = errResp.Error
+	}
+	if errResp.Name != "" {
+		msg += "\n  name: " + errResp.Name
+	}
+	if len(errResp.Errors) > 0 {
+		for field, msgs := range errResp.Errors {
+			for _, m := range msgs {
+				msg += "\n  " + field + ": " + m
+			}
+		}
+	}
+	for _, w := range errResp.Warnings {
+		msg += "\n  warning: " + w
+	}
+	if msg == "" {
+		msg = string(body)
+	}
+	return fmt.Sprintf("server error %d: %s", status, msg)
 }
 
 func normalizeName(name string) string {
