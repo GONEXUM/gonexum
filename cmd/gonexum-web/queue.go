@@ -287,6 +287,7 @@ func (q *AppQueue) processItem(item *QueueItem) {
 		NFOContent:        nfoContent,
 		Name:              torrentResult.Name,
 		CategoryID:        item.CategoryID,
+		Description:       tmdbDetails.Overview,
 		TMDBId:            item.TMDBId,
 		TMDBType:          item.TMDBType,
 		Resolution:        mediaInfo.Resolution,
