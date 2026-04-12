@@ -248,7 +248,7 @@ jobs:
 
   release:
     name: Publish Release
-    needs: [build-macos, build-windows, build-linux, build-cli, build-web, build-docker]
+    needs: [build-macos, build-windows, build-linux, build-cli, build-web]
     outputs:
       tag: ${{ github.ref_name }}
     runs-on: ubuntu-latest
