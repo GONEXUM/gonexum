@@ -108,13 +108,21 @@ func uploadTorrent(params UploadParams, settings Settings) (UploadResponse, erro
 
 	if resp.StatusCode != 200 && resp.StatusCode != 201 {
 		var errResp struct {
-			Message string `json:"message"`
-			Error   string `json:"error"`
+			Message string              `json:"message"`
+			Error   string              `json:"error"`
+			Errors  map[string][]string `json:"errors"`
 		}
 		_ = json.Unmarshal(respBody, &errResp)
 		msg := errResp.Message
 		if msg == "" {
 			msg = errResp.Error
+		}
+		if len(errResp.Errors) > 0 {
+			for field, msgs := range errResp.Errors {
+				for _, m := range msgs {
+					msg += "\n  " + field + ": " + m
+				}
+			}
 		}
 		if msg == "" {
 			msg = string(respBody)
