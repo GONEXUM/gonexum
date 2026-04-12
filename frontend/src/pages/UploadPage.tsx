@@ -443,6 +443,12 @@ export default function UploadPage() {
         .then(nfo => { setNfoContent(nfo); SaveNFO(nfo, name).catch(() => {}) })
     }
     setError('')
+    // Pre-fill description with BBCode if empty
+    if (!description && mediaInfoCLIText) {
+      GenerateBBCode(name, mediaInfoCLIText).then(bb => {
+        if (bb) setDescription(bb)
+      }).catch(() => {})
+    }
     setStep('upload')
   }
 
