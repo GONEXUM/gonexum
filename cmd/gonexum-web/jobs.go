@@ -150,7 +150,7 @@ func runJob(job *Job, req ProcessRequest) {
 		NFOContent:        nfoContent,
 		Name:              torrentResult.Name,
 		CategoryID:        req.CategoryID,
-		Description:       tmdbDetails.Overview,
+		Description:       bbcodeOrOverview(req.ReleaseName, req.MediaInfoCLI, tmdbDetails.Overview),
 		TMDBId:            req.TMDBId,
 		TMDBType:          req.TMDBType,
 		Resolution:        req.MediaInfo.Resolution,
