@@ -1,0 +1,11 @@
+build/
+dist/
+frontend/node_modules/
+.specstory/
+.vscode/
+gonexum-cli
+gonexum-web
+*.exe
+*.zip
+*.tar.gz
+.git
