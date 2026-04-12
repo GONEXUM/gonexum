@@ -209,9 +209,46 @@ jobs:
           name: gonexum-web-${{ matrix.suffix }}
           path: gonexum-web-${{ github.ref_name }}-${{ matrix.suffix }}
 
+  build-docker:
+    name: Build & Push Docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: VERSION=${{ github.ref_name }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gonexum-web:${{ steps.version.outputs.tag }}
+            ghcr.io/${{ github.repository_owner }}/gonexum-web:latest
+
   release:
     name: Publish Release
-    needs: [build-macos, build-windows, build-linux, build-cli, build-web]
+    needs: [build-macos, build-windows, build-linux, build-cli, build-web, build-docker]
     outputs:
       tag: ${{ github.ref_name }}
     runs-on: ubuntu-latest
@@ -255,6 +292,34 @@ jobs:
           sudo mv gonexum-web-TAG_PLACEHOLDER-linux-amd64 /usr/local/bin/gonexum-web
           gonexum-web --host 0.0.0.0 --port 8080
           # Puis ouvrir http://votreserveur:8080 dans le navigateur
+          ```
+
+          ### Docker
+
+          Image multi-arch (amd64 + arm64) avec `mediainfo` et `ffprobe` pré-installés.
+
+          ```bash
+          docker run -d --name gonexum-web \
+            -p 8566:8566 \
+            -v /data/media:/data \
+            -v gonexum-config:/config \
+            ghcr.io/diabolino/gonexum-web:latest
+          # Ouvrir http://votreserveur:8566
+          ```
+
+          Ou avec docker-compose :
+          ```yaml
+          services:
+            gonexum-web:
+              image: ghcr.io/diabolino/gonexum-web:latest
+              ports:
+                - "8566:8566"
+              volumes:
+                - /data/media:/data
+                - gonexum-config:/config
+              restart: unless-stopped
+          volumes:
+            gonexum-config:
           ```
 
           ### CLI (seedbox / serveur dédié)
