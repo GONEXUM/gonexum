@@ -265,6 +265,7 @@ jobs:
         uses: actions/download-artifact@v8.0.1
         with:
           path: dist
+          pattern: "{GONEXUM-*,gonexum-cli-*,gonexum-web-*}"
 
       - name: Create Release
         env:
@@ -401,6 +402,7 @@ jobs:
         uses: actions/download-artifact@v8.0.1
         with:
           path: dist
+          pattern: "{GONEXUM-*,gonexum-cli-*,gonexum-web-*}"
 
       - name: Upload files to VirusTotal
         id: vt
