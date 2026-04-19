@@ -563,17 +563,18 @@ func normalizeAudioCodecFFprobe(codec string) string {
 // ════════════════════════════════════════════════════════════════
 
 func detectResolution(width, height int) string {
-	// La largeur est plus fiable que la hauteur : les rips BluRay croppent
-	// souvent les bandes noires, donnant des hauteurs non-standard
-	// (ex: 1280×696 = 720p cropé, 1920×800 = 1080p 2.40:1)
+	// Tolérance : 50px en largeur, 200px en hauteur pour gérer
+	// les rips BluRay croppés (bandes noires retirées, scaling léger)
+	// Ex: 1280×696 = 720p cropé, 1920×800 = 1080p 2.40:1, 3794×1600 = 2160p cropé
+	const tolW, tolH = 50, 200
 	switch {
-	case width >= 3840 || height >= 2160:
+	case width >= 3840-tolW || height >= 2160-tolH:
 		return "2160p"
-	case width >= 1920 || height >= 1080:
+	case width >= 1920-tolW || height >= 1080-tolH:
 		return "1080p"
-	case width >= 1280 || height >= 720:
+	case width >= 1280-tolW || height >= 720-tolH:
 		return "720p"
-	case width >= 854 || height >= 480:
+	case width >= 854-tolW || height >= 480-tolH:
 		return "480p"
 	default:
 		return "SD"
