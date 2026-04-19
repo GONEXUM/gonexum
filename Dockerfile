@@ -5,10 +5,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG VERSION=dev
+ARG TMDB_API_KEY=""
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags "-s -w -X main.AppVersion=${VERSION}" \
+    go build -ldflags "-s -w -X main.AppVersion=${VERSION} -X main.tmdbAPIKey=${TMDB_API_KEY}" \
     -o /gonexum-web ./cmd/gonexum-web/
 
 # ── Runtime stage ────────────────────────────────────────────────────────────
