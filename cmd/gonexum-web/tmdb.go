@@ -83,6 +83,20 @@ func tmdbGet(rawURL string) ([]byte, error) {
 }
 
 func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
+	results, err := searchTMDBProxy(query, mediaType)
+	if err == nil && len(results) > 0 {
+		return results, nil
+	}
+	if direct, derr := searchTMDBDirect(query, mediaType); derr == nil && len(direct) > 0 {
+		return direct, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func searchTMDBProxy(query string, mediaType string) ([]TMDBResult, error) {
 	params := url.Values{}
 	params.Set("t", "search")
 	params.Set("q", query)
@@ -129,6 +143,20 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 }
 
 func getTMDBDetails(id int, mediaType string) (TMDBDetails, error) {
+	details, err := getTMDBDetailsProxy(id, mediaType)
+	if err == nil && details.Title != "" {
+		return details, nil
+	}
+	if d, derr := getTMDBDetailsDirect(id, mediaType); derr == nil && d.Title != "" {
+		return d, nil
+	}
+	if err != nil {
+		return TMDBDetails{}, err
+	}
+	return details, nil
+}
+
+func getTMDBDetailsProxy(id int, mediaType string) (TMDBDetails, error) {
 	t := "movie"
 	if mediaType == "tv" {
 		t = "tv"
