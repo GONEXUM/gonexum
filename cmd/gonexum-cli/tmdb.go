@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-const nexumTMDBBase = "https://tmdb.uklm.xyz/api.php"
+// nexumTMDBBase est injecté via -ldflags "-X main.nexumTMDBBase=..."
+var nexumTMDBBase = "https://tmdb.uklm.xyz/api.php"
 
 type nexumSearchResult struct {
 	Title         string          `json:"title"`

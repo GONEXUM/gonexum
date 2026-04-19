@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-const nexumTMDBBase = "https://tmdb.uklm.xyz/api.php"
+// nexumTMDBBase est injecté via -ldflags "-X main.nexumTMDBBase=..."
+var nexumTMDBBase = "https://tmdb.uklm.xyz/api.php"
 
 // nexumSearchResult matches the API response from tmdb.uklm.xyz
 // Genres can be either a space-separated string or a JSON array of strings
