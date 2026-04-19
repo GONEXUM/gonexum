@@ -6,10 +6,11 @@ RUN go mod download
 COPY . .
 ARG VERSION=dev
 ARG TMDB_API_KEY=""
+ARG TMDB_PROXY_URL=""
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -ldflags "-s -w -X main.AppVersion=${VERSION} -X main.tmdbAPIKey=${TMDB_API_KEY}" \
+    go build -ldflags "-s -w -X main.AppVersion=${VERSION} -X main.tmdbAPIKey=${TMDB_API_KEY} -X main.nexumTMDBBase=${TMDB_PROXY_URL}" \
     -o /gonexum-web ./cmd/gonexum-web/
 
 # ── Runtime stage ────────────────────────────────────────────────────────────

@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-const nexumTMDBBase = "<TMDB_PROXY_URL>"
+// nexumTMDBBase est injecté via -ldflags "-X main.nexumTMDBBase=..."
+var nexumTMDBBase = "<TMDB_PROXY_URL>"
 
 type nexumSearchResult struct {
 	Title         string          `json:"title"`

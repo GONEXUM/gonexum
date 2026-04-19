@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-const nexumTMDBBase = "<TMDB_PROXY_URL>"
+// nexumTMDBBase est injecté via -ldflags "-X main.nexumTMDBBase=..."
+var nexumTMDBBase = "<TMDB_PROXY_URL>"
 
 // nexumSearchResult matches the API response from <TMDB_PROXY>
 // Genres can be either a space-separated string or a JSON array of strings
