@@ -193,7 +193,7 @@ func handleVersion(w http.ResponseWriter, r *http.Request) {
 		"available": false,
 		"url":       "",
 	}
-	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum-releases/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/GONEXUM/gonexum/releases/latest")
 	if err == nil {
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)

@@ -388,7 +388,7 @@ func printHeader() {
 }
 
 func checkUpdate() {
-	resp, err := http.Get("https://api.github.com/repos/diabolino/gonexum-releases/releases/latest")
+	resp, err := http.Get("https://api.github.com/repos/GONEXUM/gonexum/releases/latest")
 	if err != nil {
 		return
 	}
