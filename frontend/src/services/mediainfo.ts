@@ -115,9 +115,13 @@ function normalizeVideoCodec(format: string, profile: string): string {
 }
 
 function detectResolution(w: number, h: number): string {
-  if (h >= 2160 || w >= 3840) return '2160p'
-  if (h >= 1080 || w >= 1920) return '1080p'
-  if (h >= 720 || w >= 1280) return '720p'
+  // Tolérance : 50px en largeur, 200px en hauteur pour gérer
+  // les rips BluRay croppés (bandes noires retirées, scaling léger).
+  const TW = 50, TH = 200
+  if (h >= 2160 - TH || w >= 3840 - TW) return '2160p'
+  if (h >= 1080 - TH || w >= 1920 - TW) return '1080p'
+  if (h >= 720 - TH  || w >= 1280 - TW) return '720p'
+  if (h >= 480 - TH  || w >= 854 - TW)  return '480p'
   if (w > 0 || h > 0) return 'SD'
   return ''
 }
