@@ -214,6 +214,26 @@ func handleVersion(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, info)
 }
 
+// GET /api/check-duplicate?q=<release_name>
+func handleCheckDuplicate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		jsonErr(w, 400, "q requis")
+		return
+	}
+	s, _ := loadSettings()
+	res, err := checkDuplicate(q, s)
+	if err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	jsonOK(w, res)
+}
+
 // ── Queue handlers ───────────────────────────────────────────────────────────
 
 // GET  /api/queue       → list items

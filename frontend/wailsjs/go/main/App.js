@@ -10,6 +10,10 @@ export function GenerateBBCode(arg1, arg2) {
   return window['go']['main']['App']['GenerateBBCode'](arg1, arg2);
 }
 
+export function CheckDuplicate(arg1) {
+  return window['go']['main']['App']['CheckDuplicate'](arg1);
+}
+
 export function GetCategories() {
   return window['go']['main']['App']['GetCategories']();
 }

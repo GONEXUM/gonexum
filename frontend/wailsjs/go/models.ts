@@ -1,5 +1,23 @@
 export namespace main {
 
+	export class DuplicateCheckResult {
+	    found: boolean;
+	    id?: number;
+	    name?: string;
+	    url?: string;
+
+	    static createFrom(source: any = {}) {
+	        return new DuplicateCheckResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.found = source["found"];
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.url = source["url"];
+	    }
+	}
 	export class Category {
 	    id: number;
 	    name: string;
