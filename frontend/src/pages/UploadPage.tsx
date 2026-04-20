@@ -315,6 +315,13 @@ export default function UploadPage() {
       setTorrent(t)
       setName(t.name)
 
+      // Duplicate check as soon as we know the name
+      CheckDuplicate(t.name).then(dup => {
+        if (dup && dup.found) {
+          setError(`⚠ Un torrent similaire existe déjà sur nexum : ${dup.name} (ID #${dup.id}) — ${dup.url}`)
+        }
+      }).catch(() => {})
+
       // Try to extract media info (from file or largest video in folder)
       setLoadingMsg('Extraction des informations médias...')
       try {
