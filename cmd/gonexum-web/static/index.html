@@ -529,6 +529,8 @@
   </div>
 </header>
 
+<div id="duplicateTop" class="hidden"></div>
+
 <!-- Step navigation -->
 <div class="step-nav" id="stepNav">
   <div class="step-tab active" id="tab-1">1. Source</div>
@@ -1055,16 +1057,24 @@ function goStep(n) {
 
 async function checkDuplicate() {
   const name = state.releaseName || state.sourcePath.split('/').pop() || '';
+  // Clear both banners
+  const panelEl = document.getElementById('duplicateAlert');
+  const topEl = document.getElementById('duplicateTop');
+  panelEl.innerHTML = '';
+  topEl.innerHTML = '';
+  topEl.classList.add('hidden');
   if (!name) return;
-  const alertEl = document.getElementById('duplicateAlert');
-  alertEl.innerHTML = '';
   try {
     const r = await api('GET', '/api/check-duplicate?q=' + encodeURIComponent(name));
     if (r.found) {
-      alertEl.innerHTML = `<div class="alert warning">
-        ⚠ Un torrent avec un nom similaire existe déjà sur nexum :
+      const html = `<div class="alert warning" style="margin:12px 24px 0">
+        ⚠ Un torrent similaire existe déjà sur nexum :
         <a href="${escHtml(r.url)}" target="_blank"><strong>${escHtml(r.name)}</strong></a> (ID #${r.id})
+        <button onclick="document.getElementById('duplicateTop').classList.add('hidden')" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer">✕</button>
       </div>`;
+      panelEl.innerHTML = html;
+      topEl.innerHTML = html;
+      topEl.classList.remove('hidden');
     }
   } catch(e) {}
 }
@@ -1246,6 +1256,9 @@ async function analyzeSource() {
     state.mediaInfo = res.mediaInfo || {};
     state.mediaInfoCLI = res.cliText || '';
     state.mediaDetected = res.detected || false;
+
+    // Duplicate check dès la détection du nom
+    checkDuplicate();
 
     // Fill step 2 form
     setSelect('miResolution', state.mediaInfo.resolution || '');
