@@ -338,6 +338,19 @@ Config:
 	// ── Étape 4 : Upload ────────────────────────────────────────────────────
 	step(4, 4, "Upload vers nexum-core.com")
 
+	// Vérification doublon
+	if dup, err := checkDuplicate(releaseName, settings); err == nil && dup.Found {
+		warnf("  ⚠ Doublon détecté : %s (ID #%d)\n", dup.Name, dup.ID)
+		warnf("    %s\n", dup.URL)
+		if *flagYes {
+			fatalf("Doublon — upload annulé (mode --yes).\n")
+		}
+		if strings.ToLower(readLine("  Continuer quand même ? (o/N)")) != "o" {
+			fmt.Println("  Upload annulé.")
+			return
+		}
+	}
+
 	if settings.APIKey == "" {
 		fmt.Println()
 		fatalf("API key non configurée.\nModifiez ~/.config/GONEXUM/settings.json ou utilisez --config.\n")

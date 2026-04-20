@@ -210,6 +210,14 @@ func (q *AppQueue) processItem(item *QueueItem) {
 		}
 	}
 
+	// ── Duplicate check ─────────────────────────────────────────────────
+	if !item.NoUpload {
+		if dup, err := checkDuplicate(releaseName, settings); err == nil && dup.Found {
+			fail(fmt.Sprintf("Doublon détecté sur nexum : %s (ID #%d)", dup.Name, dup.ID))
+			return
+		}
+	}
+
 	// ── 2. Media info ──────────────────────────────────────────────────
 	q.log(item.ID, "Extraction des informations média...")
 	var mediaInfo MediaInfo

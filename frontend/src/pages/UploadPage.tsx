@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
-  AppLoadSettings, GetCategories, GenerateBBCode,
+  AppLoadSettings, GetCategories, GenerateBBCode, CheckDuplicate,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
@@ -227,6 +227,12 @@ export default function UploadPage() {
       }
       try { await SaveNFO(nfo, torrent.name) } catch { /* non bloquant */ }
 
+      upd({ step: 'Vérification doublon…' })
+      const dup = await CheckDuplicate(torrent.name).catch(() => null)
+      if (dup && dup.found) {
+        throw new Error(`Doublon : ${dup.name} (ID #${dup.id})`)
+      }
+
       upd({ step: 'Upload…' })
       const bbDesc = await GenerateBBCode(torrent.name, cliText).catch(() => '')
       const result = await UploadTorrent({
@@ -449,6 +455,12 @@ export default function UploadPage() {
         if (bb) setDescription(bb)
       }).catch(() => {})
     }
+    // Duplicate check (non-blocking warning)
+    CheckDuplicate(name).then(dup => {
+      if (dup && dup.found) {
+        setError(`⚠ Un torrent similaire existe déjà : ${dup.name} (ID #${dup.id}) — ${dup.url}`)
+      }
+    }).catch(() => {})
     setStep('upload')
   }
 

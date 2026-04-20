@@ -66,6 +66,7 @@ Exemples:
 	http.HandleFunc("/api/nfo/preview", handleNFOPreview)
 	http.HandleFunc("/api/nfo/bbcode", handleNFOBBCode)
 	http.HandleFunc("/api/categories", handleCategories)
+	http.HandleFunc("/api/check-duplicate", handleCheckDuplicate)
 	http.HandleFunc("/api/queue", handleQueue)
 	http.HandleFunc("/api/queue/remove", handleQueueRemove)
 	http.HandleFunc("/api/queue/clear", handleQueueClear)

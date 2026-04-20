@@ -886,6 +886,8 @@
     <div class="card">
       <div class="card-title">Options</div>
 
+      <div id="duplicateAlert"></div>
+
       <div class="field">
         <label>Catégorie</label>
         <select id="optCategory">
@@ -1047,7 +1049,24 @@ function goStep(n) {
   if (n === 4) {
     prefillDescription();
     buildSummary();
+    checkDuplicate();
   }
+}
+
+async function checkDuplicate() {
+  const name = state.releaseName || state.sourcePath.split('/').pop() || '';
+  if (!name) return;
+  const alertEl = document.getElementById('duplicateAlert');
+  alertEl.innerHTML = '';
+  try {
+    const r = await api('GET', '/api/check-duplicate?q=' + encodeURIComponent(name));
+    if (r.found) {
+      alertEl.innerHTML = `<div class="alert warning">
+        ⚠ Un torrent avec un nom similaire existe déjà sur nexum :
+        <a href="${escHtml(r.url)}" target="_blank"><strong>${escHtml(r.name)}</strong></a> (ID #${r.id})
+      </div>`;
+    }
+  } catch(e) {}
 }
 
 async function prefillDescription() {

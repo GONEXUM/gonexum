@@ -204,6 +204,17 @@ func (a *App) GenerateBBCode(releaseName, mediaInfoCLI string) string {
 	return generateBBCodeDescription(releaseName, mediaInfoCLI)
 }
 
+// CheckDuplicate queries the nexum tracker to detect if a release with the
+// same name already exists. Returns found=false on any error (non-blocking).
+func (a *App) CheckDuplicate(releaseName string) DuplicateCheckResult {
+	settings, err := loadSettings()
+	if err != nil {
+		return DuplicateCheckResult{}
+	}
+	res, _ := checkDuplicate(releaseName, settings)
+	return res
+}
+
 // SaveNFO writes NFO content to the output directory as "<baseName>.nfo".
 // baseName should be the release name without any extension.
 // Returns the absolute path of the written file.

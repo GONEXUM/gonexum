@@ -6,6 +6,8 @@ export function AppLoadSettings():Promise<main.Settings>;
 
 export function GenerateBBCode(arg1:string,arg2:string):Promise<string>;
 
+export function CheckDuplicate(arg1:string):Promise<main.DuplicateCheckResult>;
+
 export function GetCategories():Promise<main.Category[]>;
 
 export function AppSaveSettings(arg1:main.Settings):Promise<void>;

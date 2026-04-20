@@ -172,6 +172,10 @@ func processOne(sourcePath string, category int, tmdbType, forceSource string,
 	}
 
 	// ── 4. Upload ──────────────────────────────────────────────────────
+	if dup, err := checkDuplicate(releaseName, s); err == nil && dup.Found {
+		res.err = fmt.Sprintf("doublon : %s (ID #%d)", dup.Name, dup.ID)
+		return res
+	}
 	fmt.Printf("  [4/4] Upload...\n")
 	uploadResult, err := uploadTorrent(UploadParams{
 		TorrentPath:       torrentResult.FilePath,
