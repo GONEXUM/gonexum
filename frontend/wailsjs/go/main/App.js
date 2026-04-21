@@ -14,6 +14,22 @@ export function CheckDuplicate(arg1) {
   return window['go']['main']['App']['CheckDuplicate'](arg1);
 }
 
+export function SaveHistoryEntry(arg1) {
+  return window['go']['main']['App']['SaveHistoryEntry'](arg1);
+}
+
+export function ListHistory(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListHistory'](arg1, arg2, arg3);
+}
+
+export function DeleteHistoryEntry(arg1) {
+  return window['go']['main']['App']['DeleteHistoryEntry'](arg1);
+}
+
+export function ClearHistory() {
+  return window['go']['main']['App']['ClearHistory']();
+}
+
 export function GetCategories() {
   return window['go']['main']['App']['GetCategories']();
 }

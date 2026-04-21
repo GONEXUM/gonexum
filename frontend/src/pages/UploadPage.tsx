@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   SelectFile, SelectFiles, SelectDirectory, CreateTorrent,
   SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO, UploadTorrent, DownloadTorrent, ReadTextFile, LargestVideoFile,
-  AppLoadSettings, GetCategories, GenerateBBCode, CheckDuplicate,
+  AppLoadSettings, GetCategories, GenerateBBCode, CheckDuplicate, SaveHistoryEntry,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, EventsOn, EventsOff, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
@@ -190,6 +190,7 @@ export default function UploadPage() {
   const processQueueItem = async (item: QueueItem, nfoMode: string) => {
     const upd = (patch: Partial<QueueItem>) => updateItem(item.id, patch)
     upd({ status: 'processing', error: undefined })
+    let catId = 1
     try {
       upd({ step: 'Création du torrent…' })
       const torrent = await CreateTorrent(item.path)
@@ -206,7 +207,6 @@ export default function UploadPage() {
 
       upd({ step: 'Recherche TMDB…' })
       let tmdb: main.TMDBDetails = {} as main.TMDBDetails
-      let catId = 1
       let tmdbType = 'movie'
       try {
         const results = await SearchTMDB(torrent.name, '')
@@ -256,8 +256,26 @@ export default function UploadPage() {
         try { await DownloadTorrent(result.torrent_id) } catch { /* */ }
       }
 
+      SaveHistoryEntry({
+        id: 0, createdAt: '', sourcePath: item.path,
+        releaseName: torrent.name, torrentPath: torrent.filePath, nfoPath: '',
+        infoHash: torrent.infoHash, size: torrent.size,
+        categoryId: catId, categoryName: '',
+        tmdbId: tmdb.id || 0, tmdbType, tmdbTitle: tmdb.title || '',
+        uploadUrl: result.url, uploadId: result.torrent_id,
+        status: 'done', errorMsg: '', noUpload: false,
+      } as main.HistoryEntry).catch(() => {})
+
       upd({ status: 'done', step: undefined, uploadResult: result, name: torrent.name })
     } catch (e) {
+      SaveHistoryEntry({
+        id: 0, createdAt: '', sourcePath: item.path,
+        releaseName: item.name, torrentPath: '', nfoPath: '',
+        infoHash: '', size: 0, categoryId: catId, categoryName: '',
+        tmdbId: 0, tmdbType: '', tmdbTitle: '',
+        uploadUrl: '', uploadId: 0,
+        status: 'error', errorMsg: String(e), noUpload: false,
+      } as main.HistoryEntry).catch(() => {})
       upd({ status: 'error', step: undefined, error: String(e) })
     }
   }
@@ -499,6 +517,15 @@ export default function UploadPage() {
         source,
       })
       setUploadResult(result)
+      SaveHistoryEntry({
+        id: 0, createdAt: '', sourcePath,
+        releaseName: name, torrentPath: torrent.filePath, nfoPath: '',
+        infoHash: torrent.infoHash, size: torrent.size,
+        categoryId, categoryName: '',
+        tmdbId: tmdbDetails?.id || 0, tmdbType, tmdbTitle: tmdbDetails?.title || '',
+        uploadUrl: result.url, uploadId: result.torrent_id,
+        status: 'done', errorMsg: '', noUpload: false,
+      } as main.HistoryEntry).catch(() => {})
       setStep('done')
       if (result.torrent_id) {
         try {
@@ -507,7 +534,18 @@ export default function UploadPage() {
           // téléchargement non bloquant
         }
       }
-    } catch (e) { err(e) }
+    } catch (e) {
+      SaveHistoryEntry({
+        id: 0, createdAt: '', sourcePath,
+        releaseName: name, torrentPath: torrent?.filePath || '', nfoPath: '',
+        infoHash: torrent?.infoHash || '', size: torrent?.size || 0,
+        categoryId, categoryName: '',
+        tmdbId: tmdbDetails?.id || 0, tmdbType, tmdbTitle: tmdbDetails?.title || '',
+        uploadUrl: '', uploadId: 0,
+        status: 'error', errorMsg: String(e), noUpload: false,
+      } as main.HistoryEntry).catch(() => {})
+      err(e)
+    }
     setLoading(false)
   }
 
