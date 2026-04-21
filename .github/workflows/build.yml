@@ -393,14 +393,8 @@ jobs:
           NOTES
 
           sed -i "s/TAG_PLACEHOLDER/${TAG}/g" /tmp/release_notes.md
-          # Inject changelog section
-          python3 -c "
-import sys
-notes = open('/tmp/release_notes.md').read()
-changelog = open('/tmp/changelog_section.md').read().strip()
-notes = notes.replace('CHANGELOG_PLACEHOLDER', changelog)
-open('/tmp/release_notes.md', 'w').write(notes)
-"
+          # Inject changelog section (utilise Python pour éviter les soucis de caractères spéciaux)
+          python3 -c 'import pathlib,re; p=pathlib.Path("/tmp/release_notes.md"); c=pathlib.Path("/tmp/changelog_section.md").read_text().strip(); p.write_text(p.read_text().replace("CHANGELOG_PLACEHOLDER", c))'
 
           gh release create "$TAG" \
             --title "$TAG" \
