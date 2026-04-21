@@ -5,6 +5,12 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.0.1] - 2026-04-21
+
+### Corrigé
+- **Perte du state de la queue lors de la navigation** : le contenu de la queue (items en attente, en cours, terminés) est désormais préservé quand on bascule entre Uploader / Historique / Paramètres. Le traitement continue en arrière-plan même sur une autre page.
+- Le drop de fichiers fonctionne maintenant depuis n'importe quelle page (les fichiers droppés s'ajoutent à la queue même si l'utilisateur est sur Historique).
+
 ## [3.0.0] - 2026-04-20
 
 ### Ajouté
