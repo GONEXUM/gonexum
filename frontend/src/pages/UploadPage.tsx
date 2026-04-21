@@ -231,33 +231,45 @@ function QueueItemCard({ item, running, onValidate, onUnvalidate, onEdit, onRemo
       {/* Inline details — visible only once analysis is done */}
       {a && (item.status === 'review' || item.status === 'ready') && (
         <div className="queue-item-details">
-          <div className="qi-detail-row">
-            <span className="qi-detail-label">🎬 TMDB</span>
-            <span className="qi-detail-value">
-              {effTmdbTitle
-                ? `${effTmdbTitle} ${effTmdbYear ? '(' + effTmdbYear + ')' : ''} · ${effTmdbType === 'tv' ? 'Série' : 'Film'}`
-                : <span style={{ color: 'var(--color-warning)' }}>Aucun match</span>
-              }
-            </span>
-          </div>
-          <div className="qi-detail-row">
-            <span className="qi-detail-label">📂 Catégorie</span>
-            <span className="qi-detail-value">{effCategory || '—'}</span>
-          </div>
-          {mi && (mi.resolution || mi.videoCodec || mi.audioCodec) && (
+          <div className="qi-details-text">
             <div className="qi-detail-row">
-              <span className="qi-detail-label">📺 Média</span>
+              <span className="qi-detail-label">🎬 TMDB</span>
               <span className="qi-detail-value">
-                {[mi.resolution, mi.videoCodec, mi.audioCodec, mi.source, mi.hdrFormat]
-                  .filter(Boolean).join(' · ')}
+                {effTmdbTitle
+                  ? `${effTmdbTitle} ${effTmdbYear ? '(' + effTmdbYear + ')' : ''} · ${effTmdbType === 'tv' ? 'Série' : 'Film'}`
+                  : <span style={{ color: 'var(--color-warning)' }}>Aucun match</span>
+                }
               </span>
             </div>
-          )}
-          {mi && mi.audioLanguages && (
             <div className="qi-detail-row">
-              <span className="qi-detail-label">🔊 Langues</span>
-              <span className="qi-detail-value">{mi.audioLanguages}</span>
+              <span className="qi-detail-label">📂 Catégorie</span>
+              <span className="qi-detail-value">{effCategory || '—'}</span>
             </div>
+            {mi && (mi.resolution || mi.videoCodec || mi.audioCodec) && (
+              <div className="qi-detail-row">
+                <span className="qi-detail-label">📺 Média</span>
+                <span className="qi-detail-value">
+                  {[mi.resolution, mi.videoCodec, mi.audioCodec, mi.source, mi.hdrFormat]
+                    .filter(Boolean).join(' · ')}
+                </span>
+              </div>
+            )}
+            {mi && mi.audioLanguages && (
+              <div className="qi-detail-row">
+                <span className="qi-detail-label">🔊 Langues</span>
+                <span className="qi-detail-value">{mi.audioLanguages}</span>
+              </div>
+            )}
+          </div>
+          {a.tmdb?.posterPath ? (
+            <img
+              src={a.tmdb.posterPath}
+              alt=""
+              className="qi-poster"
+              loading="lazy"
+            />
+          ) : (
+            <div className="qi-poster qi-poster-placeholder">🎬</div>
           )}
         </div>
       )}
