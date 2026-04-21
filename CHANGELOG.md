@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.3] - 2026-04-21
+
+### Corrigé
+- **BBCode ne listait qu'une seule piste audio/sous-titre** : le parseur mediainfo ne matchait que les sections nommées exactement `Audio` ou `Text`, et ratait les pistes supplémentaires (`Audio #1`, `Audio #2`, `Text #1`…). Toutes les pistes sont désormais incluses dans la description.
+
 ## [3.1.2] - 2026-04-21
 
 ### Corrigé
