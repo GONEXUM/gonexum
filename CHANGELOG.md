@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.1] - 2026-04-21
+
+### Ajouté
+- **Poster TMDB** affiché à droite de chaque item de la queue une fois l'analyse terminée (taille responsive via `clamp()` + `aspect-ratio: 2/3`). Placeholder 🎬 si aucun match TMDB.
+
 ## [3.1.0] - 2026-04-21
 
 ### Ajouté
