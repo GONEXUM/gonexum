@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import UploadPage from './pages/UploadPage'
 import SettingsPage from './pages/SettingsPage'
 import HistoryPage from './pages/HistoryPage'
+import { UploadQueueProvider } from './contexts/UploadQueueContext'
 import { AppLoadSettings } from '../wailsjs/go/main/App'
 import './style.css'
 
@@ -61,9 +62,11 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <AppRoutes />
-      </Layout>
+      <UploadQueueProvider>
+        <Layout>
+          <AppRoutes />
+        </Layout>
+      </UploadQueueProvider>
     </BrowserRouter>
   )
 }
