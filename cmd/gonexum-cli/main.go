@@ -330,6 +330,14 @@ Config:
 	}
 
 	if *flagNoUpload {
+		_ = saveHistory(HistoryEntry{
+			SourcePath: sourcePath, ReleaseName: releaseName,
+			TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+			InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+			CategoryID: *flagCategory, CategoryName: defaultCategoriesMap[*flagCategory],
+			TMDBId: tmdbDetails.ID, TMDBType: tmdbType, TMDBTitle: tmdbDetails.Title,
+			Status: "done", NoUpload: true,
+		})
 		fmt.Println()
 		fmt.Println("  Upload désactivé (--no-upload). Terminé.")
 		return
@@ -379,8 +387,25 @@ Config:
 		Source:            mediaInfo.Source,
 	}, settings)
 	if err != nil {
+		_ = saveHistory(HistoryEntry{
+			SourcePath: sourcePath, ReleaseName: releaseName,
+			TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+			InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+			CategoryID: categoryID, CategoryName: categories[categoryID],
+			TMDBId: tmdbDetails.ID, TMDBType: tmdbType, TMDBTitle: tmdbDetails.Title,
+			Status: "error", ErrorMsg: err.Error(),
+		})
 		fatalf("Erreur upload: %v\n", err)
 	}
+	_ = saveHistory(HistoryEntry{
+		SourcePath: sourcePath, ReleaseName: releaseName,
+		TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+		InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+		CategoryID: categoryID, CategoryName: categories[categoryID],
+		TMDBId: tmdbDetails.ID, TMDBType: tmdbType, TMDBTitle: tmdbDetails.Title,
+		UploadURL: uploadResult.URL, UploadID: uploadResult.TorrentID,
+		Status: "done",
+	})
 
 	fmt.Println()
 	ok("  Upload réussi!")

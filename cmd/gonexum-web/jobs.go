@@ -132,7 +132,18 @@ func runJob(job *Job, req ProcessRequest) {
 		job.log(fmt.Sprintf("NFO sauvegardé: %s", nfoPath))
 	}
 
+	hist := HistoryEntry{
+		SourcePath: req.SourcePath, ReleaseName: req.ReleaseName,
+		TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+		InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+		CategoryID: req.CategoryID,
+		TMDBId: req.TMDBId, TMDBType: req.TMDBType, TMDBTitle: tmdbDetails.Title,
+	}
+
 	if req.NoUpload {
+		hist.Status = "done"
+		hist.NoUpload = true
+		_ = saveHistory(hist)
 		job.emit("done", DoneData{
 			TorrentPath: torrentResult.FilePath,
 			NFOPath:     nfoPath,
@@ -168,9 +179,17 @@ func runJob(job *Job, req ProcessRequest) {
 		Source:            req.MediaInfo.Source,
 	}, settings)
 	if err != nil {
+		hist.Status = "error"
+		hist.ErrorMsg = err.Error()
+		_ = saveHistory(hist)
 		job.emit("error", map[string]string{"message": "Erreur upload: " + err.Error()})
 		return
 	}
+
+	hist.Status = "done"
+	hist.UploadURL = uploadResult.URL
+	hist.UploadID = uploadResult.TorrentID
+	_ = saveHistory(hist)
 
 	job.emit("done", DoneData{
 		TorrentPath: torrentResult.FilePath,

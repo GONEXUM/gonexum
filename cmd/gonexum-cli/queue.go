@@ -166,7 +166,18 @@ func processOne(sourcePath string, category int, tmdbType, forceSource string,
 	nfoPath := strings.TrimSuffix(torrentResult.FilePath, ".torrent") + ".nfo"
 	_ = os.WriteFile(nfoPath, []byte(nfoContent), 0644)
 
+	hist := HistoryEntry{
+		SourcePath: sourcePath, ReleaseName: releaseName,
+		TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+		InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+		CategoryID: category, CategoryName: defaultCategoriesMap[category],
+		TMDBId: tmdbDetails.ID, TMDBType: resolvedType, TMDBTitle: tmdbDetails.Title,
+	}
+
 	if noUpload {
+		hist.Status = "done"
+		hist.NoUpload = true
+		_ = saveHistory(hist)
 		res.success = true
 		return res
 	}
@@ -174,6 +185,9 @@ func processOne(sourcePath string, category int, tmdbType, forceSource string,
 	// ── 4. Upload ──────────────────────────────────────────────────────
 	if dup, err := checkDuplicate(releaseName, s); err == nil && dup.Found {
 		res.err = fmt.Sprintf("doublon : %s (ID #%d)", dup.Name, dup.ID)
+		hist.Status = "error"
+		hist.ErrorMsg = res.err
+		_ = saveHistory(hist)
 		return res
 	}
 	fmt.Printf("  [4/4] Upload...\n")
@@ -195,8 +209,16 @@ func processOne(sourcePath string, category int, tmdbType, forceSource string,
 	}, s)
 	if err != nil {
 		res.err = "upload: " + err.Error()
+		hist.Status = "error"
+		hist.ErrorMsg = err.Error()
+		_ = saveHistory(hist)
 		return res
 	}
+
+	hist.Status = "done"
+	hist.UploadURL = uploadResult.URL
+	hist.UploadID = uploadResult.TorrentID
+	_ = saveHistory(hist)
 
 	res.success = true
 	res.url = uploadResult.URL

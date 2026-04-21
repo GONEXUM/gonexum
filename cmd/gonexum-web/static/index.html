@@ -515,6 +515,36 @@
 
   .queue-empty { text-align:center; padding:40px 20px; color:var(--text-muted); font-size:13px; }
   .btn-queue-active { background:var(--color-accent-dim); color:var(--color-accent); border:1px solid var(--border-accent); }
+
+  /* ── History ── */
+  #historyPanel { display: none; }
+  #historyPanel.active { display: block; }
+
+  .history-item {
+    background: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .history-item.error { border-color: rgba(239,68,68,.3); }
+  .hi-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .hi-status.done    { background: var(--color-success); }
+  .hi-status.error   { background: var(--color-danger); }
+  .hi-main { flex: 1; min-width: 0; }
+  .hi-name {
+    font-size: 13px; font-weight: 700;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hi-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .hi-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .hi-actions button, .hi-actions a {
+    font-size: 11px; padding: 3px 8px; border-radius: var(--radius);
+    text-decoration: none; white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -524,6 +554,7 @@
   <div class="logo">GONEXUM <span id="versionBadge">Web</span></div>
   <div class="header-actions">
     <button class="btn-ghost" id="btnQueueToggle" onclick="toggleQueueMode()">⚡ Queue <span id="queueBadge" class="hidden" style="background:var(--color-accent);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
+    <button class="btn-ghost" id="btnHistoryToggle" onclick="toggleHistoryMode()">📜 Historique</button>
     <button class="btn-ghost" onclick="openSettings()">⚙ Paramètres</button>
     <button class="btn-ghost" id="btnNew" onclick="resetAll()">↺ Nouveau</button>
   </div>
@@ -700,6 +731,25 @@
     <!-- Queue list -->
     <div id="queueList">
       <div class="queue-empty">La queue est vide — ajoutez des fichiers ci-dessus</div>
+    </div>
+  </div>
+</div>
+
+<!-- History panel -->
+<div id="historyPanel" class="container">
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Historique</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="historyClearAll()">Tout effacer</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <input type="text" id="historySearch" placeholder="Rechercher par nom de release ou titre TMDB..."
+             oninput="debounceHistorySearch()">
+    </div>
+    <div id="historyList">
+      <div class="queue-empty">Aucun upload enregistré</div>
     </div>
   </div>
 </div>
@@ -1790,6 +1840,12 @@ function toggleQueueMode() {
   const btnNew = document.getElementById('btnNew');
 
   if (queueMode) {
+    // Désactive l'historique si actif
+    if (historyMode) {
+      historyMode = false;
+      document.getElementById('btnHistoryToggle').classList.remove('btn-queue-active');
+      document.getElementById('historyPanel').classList.remove('active');
+    }
     btn.classList.add('btn-queue-active');
     stepNav.classList.add('hidden');
     main.classList.add('hidden');
@@ -1910,6 +1966,112 @@ function renderQueueList(items) {
       ${removeBtn ? `<div class="qi-actions">${removeBtn}</div>` : ''}
     </div>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  History mode
+// ════════════════════════════════════════════════════════════════════
+let historyMode = false;
+
+function toggleHistoryMode() {
+  historyMode = !historyMode;
+  const btn = document.getElementById('btnHistoryToggle');
+  const stepNav = document.getElementById('stepNav');
+  const main = document.getElementById('mainContainer');
+  const panel = document.getElementById('historyPanel');
+  const queuePanel = document.getElementById('queuePanel');
+
+  if (historyMode) {
+    // Also disable queue mode if active
+    if (queueMode) { toggleQueueMode(); }
+    btn.classList.add('btn-queue-active');
+    stepNav.classList.add('hidden');
+    main.classList.add('hidden');
+    queuePanel.classList.remove('active');
+    panel.classList.add('active');
+    loadHistory();
+  } else {
+    btn.classList.remove('btn-queue-active');
+    stepNav.classList.remove('hidden');
+    main.classList.remove('hidden');
+    panel.classList.remove('active');
+  }
+}
+
+let _histSearchTimer = null;
+function debounceHistorySearch() {
+  clearTimeout(_histSearchTimer);
+  _histSearchTimer = setTimeout(loadHistory, 300);
+}
+
+async function loadHistory() {
+  const q = document.getElementById('historySearch').value.trim();
+  const el = document.getElementById('historyList');
+  try {
+    const res = await api('GET', '/api/history?limit=100&q=' + encodeURIComponent(q));
+    renderHistory(res.items || []);
+  } catch(e) {
+    el.innerHTML = `<div class="alert error">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderHistory(items) {
+  const el = document.getElementById('historyList');
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div class="queue-empty">Aucun upload enregistré</div>';
+    return;
+  }
+  el.innerHTML = items.map(it => {
+    const date = new Date(it.createdAt).toLocaleString('fr-FR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    const sizeStr = it.size ? formatBytes(it.size) : '';
+    const tmdbLabel = it.tmdbTitle ? `🎬 ${escHtml(it.tmdbTitle)}` : '';
+    const catLabel = it.categoryName ? `📂 ${escHtml(it.categoryName)}` : '';
+    const noUploadBadge = it.noUpload ? '<span style="color:var(--color-warning)">(pas d\'upload)</span>' : '';
+
+    const link = it.uploadUrl
+      ? `<a href="${escHtml(it.uploadUrl)}" target="_blank" class="btn-ghost" style="color:var(--color-success)">↗ nexum #${it.uploadId}</a>`
+      : '';
+    const errMsg = it.status === 'error' && it.errorMsg
+      ? `<div style="font-size:11px;color:#fca5a5;margin-top:3px">${escHtml(it.errorMsg)}</div>`
+      : '';
+
+    return `<div class="history-item ${it.status}">
+      <div class="hi-status ${it.status}"></div>
+      <div class="hi-main">
+        <div class="hi-name" title="${escHtml(it.sourcePath || '')}">${escHtml(it.releaseName)}</div>
+        <div class="hi-meta">
+          <span>🕒 ${date}</span>
+          ${tmdbLabel ? '<span>' + tmdbLabel + '</span>' : ''}
+          ${catLabel ? '<span>' + catLabel + '</span>' : ''}
+          ${sizeStr ? '<span>💾 ' + sizeStr + '</span>' : ''}
+          ${noUploadBadge ? '<span>' + noUploadBadge + '</span>' : ''}
+        </div>
+        ${errMsg}
+      </div>
+      <div class="hi-actions">
+        ${link}
+        <button class="btn-ghost" onclick="historyDelete(${it.id})" title="Supprimer">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function historyDelete(id) {
+  try {
+    await api('POST', '/api/history/delete', { id });
+    loadHistory();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function historyClearAll() {
+  if (!confirm('Effacer TOUT l\'historique ? Cette action est irréversible.')) return;
+  try {
+    await api('POST', '/api/history/clear');
+    loadHistory();
+  } catch(e) { alert('Erreur : ' + e.message); }
 }
 
 function cleanReleaseNameForSearch(name) {
