@@ -215,6 +215,28 @@ func (a *App) CheckDuplicate(releaseName string) DuplicateCheckResult {
 	return res
 }
 
+// ── History ──
+
+// SaveHistoryEntry is called by the frontend after an upload completes.
+func (a *App) SaveHistoryEntry(e HistoryEntry) error {
+	return saveHistory(e)
+}
+
+// ListHistory returns recent history entries (default limit 100).
+func (a *App) ListHistory(limit, offset int, search string) ([]HistoryEntry, error) {
+	return listHistory(limit, offset, search)
+}
+
+// DeleteHistoryEntry removes one entry by id.
+func (a *App) DeleteHistoryEntry(id int64) error {
+	return deleteHistory(id)
+}
+
+// ClearHistory removes all entries.
+func (a *App) ClearHistory() error {
+	return clearHistory()
+}
+
 // SaveNFO writes NFO content to the output directory as "<baseName>.nfo".
 // baseName should be the release name without any extension.
 // Returns the absolute path of the written file.

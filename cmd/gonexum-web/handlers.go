@@ -234,6 +234,68 @@ func handleCheckDuplicate(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, res)
 }
 
+// ── History handlers ─────────────────────────────────────────────────────────
+
+// GET /api/history?limit=50&offset=0&q=search
+func handleHistoryList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	q := r.URL.Query().Get("q")
+	limit := 50
+	offset := 0
+	if v := r.URL.Query().Get("limit"); v != "" {
+		fmt.Sscanf(v, "%d", &limit)
+	}
+	if v := r.URL.Query().Get("offset"); v != "" {
+		fmt.Sscanf(v, "%d", &offset)
+	}
+	items, err := listHistory(limit, offset, q)
+	if err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	total, _ := countHistory(q)
+	jsonOK(w, map[string]interface{}{
+		"items": items,
+		"total": total,
+	})
+}
+
+// DELETE /api/history/:id or POST /api/history/delete with {id}
+func handleHistoryDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	var req struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == 0 {
+		jsonErr(w, 400, "id requis")
+		return
+	}
+	if err := deleteHistory(req.ID); err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	jsonOK(w, map[string]string{"status": "ok"})
+}
+
+// POST /api/history/clear
+func handleHistoryClear(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", 405)
+		return
+	}
+	if err := clearHistory(); err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	jsonOK(w, map[string]string{"status": "ok"})
+}
+
 // ── Queue handlers ───────────────────────────────────────────────────────────
 
 // GET  /api/queue       → list items

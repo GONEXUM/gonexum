@@ -278,7 +278,18 @@ func (q *AppQueue) processItem(item *QueueItem) {
 	nfoPath := strings.TrimSuffix(torrentResult.FilePath, ".torrent") + ".nfo"
 	_ = os.WriteFile(nfoPath, []byte(nfoContent), 0644)
 
+	hist := HistoryEntry{
+		SourcePath: item.SourcePath, ReleaseName: releaseName,
+		TorrentPath: torrentResult.FilePath, NFOPath: nfoPath,
+		InfoHash: torrentResult.InfoHash, Size: torrentResult.Size,
+		CategoryID: item.CategoryID,
+		TMDBId: item.TMDBId, TMDBType: item.TMDBType, TMDBTitle: tmdbDetails.Title,
+	}
+
 	if item.NoUpload {
+		hist.Status = "done"
+		hist.NoUpload = true
+		_ = saveHistory(hist)
 		q.update(item.ID, func(it *QueueItem) {
 			it.Status = QueueDone
 			it.Progress = 100
@@ -307,9 +318,17 @@ func (q *AppQueue) processItem(item *QueueItem) {
 		Source:            mediaInfo.Source,
 	}, settings)
 	if err != nil {
+		hist.Status = "error"
+		hist.ErrorMsg = err.Error()
+		_ = saveHistory(hist)
 		fail("Erreur upload: " + err.Error())
 		return
 	}
+
+	hist.Status = "done"
+	hist.UploadURL = uploadResult.URL
+	hist.UploadID = uploadResult.TorrentID
+	_ = saveHistory(hist)
 
 	q.log(item.ID, fmt.Sprintf("Upload OK — ID %d", uploadResult.TorrentID))
 	q.update(item.ID, func(it *QueueItem) {

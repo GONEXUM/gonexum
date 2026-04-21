@@ -71,6 +71,9 @@ Exemples:
 	http.HandleFunc("/api/queue/remove", handleQueueRemove)
 	http.HandleFunc("/api/queue/clear", handleQueueClear)
 	http.HandleFunc("/api/queue/events", handleQueueEvents)
+	http.HandleFunc("/api/history", handleHistoryList)
+	http.HandleFunc("/api/history/delete", handleHistoryDelete)
+	http.HandleFunc("/api/history/clear", handleHistoryClear)
 
 	// Static files (embedded)
 	staticFS, err := fs.Sub(staticFiles, "static")
