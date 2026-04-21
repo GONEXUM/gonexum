@@ -267,6 +267,20 @@ jobs:
           path: dist
           pattern: "{GONEXUM-*,gonexum-cli-*,gonexum-web-*}"
 
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          # Extrait la section ## [TAG] jusqu'à la prochaine section ## [
+          awk -v tag="$TAG" '
+            $0 ~ "^## \\[" tag "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > /tmp/changelog_section.md
+          if [ ! -s /tmp/changelog_section.md ]; then
+            echo "_Pas de section changelog pour cette version._" > /tmp/changelog_section.md
+          fi
+
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -274,6 +288,10 @@ jobs:
         run: |
           cat > /tmp/release_notes.md << 'NOTES'
           ## GONEXUM TAG_PLACEHOLDER
+
+          CHANGELOG_PLACEHOLDER
+
+          ---
 
           ### Application desktop
 
@@ -375,6 +393,14 @@ jobs:
           NOTES
 
           sed -i "s/TAG_PLACEHOLDER/${TAG}/g" /tmp/release_notes.md
+          # Inject changelog section
+          python3 -c "
+import sys
+notes = open('/tmp/release_notes.md').read()
+changelog = open('/tmp/changelog_section.md').read().strip()
+notes = notes.replace('CHANGELOG_PLACEHOLDER', changelog)
+open('/tmp/release_notes.md', 'w').write(notes)
+"
 
           gh release create "$TAG" \
             --title "$TAG" \
