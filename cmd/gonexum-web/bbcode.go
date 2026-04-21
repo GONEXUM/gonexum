@@ -118,7 +118,7 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 	// ── Audio tracks ──
 	var audios []miSection
 	for _, s := range sections {
-		if s.name == "Audio" {
+		if s.name == "Audio" || strings.HasPrefix(s.name, "Audio #") || strings.HasPrefix(s.name, "Audio ") {
 			audios = append(audios, s)
 		}
 	}
@@ -152,7 +152,7 @@ func generateBBCodeDescription(releaseName, mediaInfoCLI string) string {
 	// ── Subtitles ──
 	var subs []miSection
 	for _, s := range sections {
-		if s.name == "Text" {
+		if s.name == "Text" || strings.HasPrefix(s.name, "Text #") || strings.HasPrefix(s.name, "Text ") {
 			subs = append(subs, s)
 		}
 	}
