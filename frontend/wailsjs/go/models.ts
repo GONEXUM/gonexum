@@ -1,5 +1,51 @@
 export namespace main {
 
+	export class HistoryEntry {
+	    id: number;
+	    createdAt: string;
+	    sourcePath: string;
+	    releaseName: string;
+	    torrentPath: string;
+	    nfoPath: string;
+	    infoHash: string;
+	    size: number;
+	    categoryId: number;
+	    categoryName: string;
+	    tmdbId: number;
+	    tmdbType: string;
+	    tmdbTitle: string;
+	    uploadUrl: string;
+	    uploadId: number;
+	    status: string;
+	    errorMsg: string;
+	    noUpload: boolean;
+
+	    static createFrom(source: any = {}) {
+	        return new HistoryEntry(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.createdAt = source["createdAt"];
+	        this.sourcePath = source["sourcePath"];
+	        this.releaseName = source["releaseName"];
+	        this.torrentPath = source["torrentPath"];
+	        this.nfoPath = source["nfoPath"];
+	        this.infoHash = source["infoHash"];
+	        this.size = source["size"];
+	        this.categoryId = source["categoryId"];
+	        this.categoryName = source["categoryName"];
+	        this.tmdbId = source["tmdbId"];
+	        this.tmdbType = source["tmdbType"];
+	        this.tmdbTitle = source["tmdbTitle"];
+	        this.uploadUrl = source["uploadUrl"];
+	        this.uploadId = source["uploadId"];
+	        this.status = source["status"];
+	        this.errorMsg = source["errorMsg"];
+	        this.noUpload = source["noUpload"];
+	    }
+	}
 	export class DuplicateCheckResult {
 	    found: boolean;
 	    id?: number;

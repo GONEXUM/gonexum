@@ -5,6 +5,7 @@ import './Layout.css'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Uploader', icon: '↑' },
+  { to: '/history', label: 'Historique', icon: '📜' },
   { to: '/settings', label: 'Paramètres', icon: '⚙' },
 ]
 
@@ -41,7 +42,7 @@ export default function Layout({ children }: LayoutProps) {
         <nav className="sidebar-nav">
           <div className="nav-section-label">NAVIGATION</div>
           {NAV_ITEMS.map((item) => {
-            const locked = !configured && item.to === '/'
+            const locked = !configured && item.to !== '/settings'
             return locked ? (
               <span
                 key={item.to}

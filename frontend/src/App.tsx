@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import Layout from './components/Layout'
 import UploadPage from './pages/UploadPage'
 import SettingsPage from './pages/SettingsPage'
+import HistoryPage from './pages/HistoryPage'
 import { AppLoadSettings } from '../wailsjs/go/main/App'
 import './style.css'
 
@@ -45,6 +46,7 @@ function AppRoutes() {
             ? <UploadPage />
             : null
         } />
+        <Route path="/history" element={configured ? <HistoryPage /> : null} />
         <Route path="/settings" element={
           <SettingsPage
             setupRequired={!configured}

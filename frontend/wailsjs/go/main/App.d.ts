@@ -8,6 +8,14 @@ export function GenerateBBCode(arg1:string,arg2:string):Promise<string>;
 
 export function CheckDuplicate(arg1:string):Promise<main.DuplicateCheckResult>;
 
+export function SaveHistoryEntry(arg1:main.HistoryEntry):Promise<void>;
+
+export function ListHistory(arg1:number,arg2:number,arg3:string):Promise<main.HistoryEntry[]>;
+
+export function DeleteHistoryEntry(arg1:number):Promise<void>;
+
+export function ClearHistory():Promise<void>;
+
 export function GetCategories():Promise<main.Category[]>;
 
 export function AppSaveSettings(arg1:main.Settings):Promise<void>;
