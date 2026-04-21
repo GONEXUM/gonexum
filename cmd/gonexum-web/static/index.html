@@ -1063,14 +1063,40 @@ async function checkWebUpdate() {
     const vb = document.getElementById('versionBadge');
     if (v.current && v.current !== 'dev') vb.textContent = 'Web ' + v.current;
     if (v.available) {
-      const banner = document.createElement('div');
-      banner.style.cssText = 'background:rgba(249,115,22,.12);border-bottom:1px solid rgba(249,115,22,.3);padding:8px 24px;font-size:12px;display:flex;align-items:center;gap:10px;';
-      banner.innerHTML = `★ Nouvelle version disponible : <strong>v${v.latest}</strong>
-        &nbsp;<a href="${v.url}" target="_blank" style="color:var(--color-accent)">Télécharger</a>
-        <button onclick="this.parentElement.remove()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;font-size:14px">✕</button>`;
-      document.querySelector('header').after(banner);
+      blockAppForUpdate(v.current, v.latest, v.url);
     }
   } catch(e) {}
+}
+
+function blockAppForUpdate(current, latest, url) {
+  const blocker = document.createElement('div');
+  blocker.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(13, 17, 23, 0.97); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  `;
+  blocker.innerHTML = `
+    <div style="max-width:520px;width:100%;background:var(--bg-card);border:1px solid var(--border-accent);border-radius:var(--radius-lg);padding:32px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.6)">
+      <div style="font-size:48px;margin-bottom:16px">⚠</div>
+      <h2 style="margin:0 0 12px;color:var(--color-accent);font-size:18px;letter-spacing:2px;text-transform:uppercase">Mise à jour requise</h2>
+      <p style="color:var(--text-secondary);font-size:13px;line-height:1.6;margin:0 0 20px">
+        Cette version de GONEXUM est obsolète et ne peut plus être utilisée.<br>
+        Mettez à jour pour continuer.
+      </p>
+      <div style="background:var(--bg-app);border-radius:var(--radius);padding:14px;margin-bottom:20px;font-family:'SF Mono','Fira Code',monospace;font-size:12px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;color:var(--text-muted)">
+          <span>Version installée</span><span>v${escHtml(current)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--color-success)">
+          <span>Dernière version</span><span><strong>v${escHtml(latest)}</strong></span>
+        </div>
+      </div>
+      <a href="${escHtml(url)}" target="_blank" class="btn-primary" style="display:inline-block;padding:10px 24px;text-decoration:none">
+        ↗ Télécharger la mise à jour
+      </a>
+    </div>
+  `;
+  document.body.appendChild(blocker);
 }
 
 async function checkSettings() {

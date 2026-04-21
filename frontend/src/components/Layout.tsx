@@ -1,7 +1,32 @@
 import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { AppLoadSettings, CheckUpdate, GetAppVersion } from '../../wailsjs/go/main/App'
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime'
 import './Layout.css'
+
+function UpdateBlocker({ current, latest, url }: { current: string; latest: string; url: string }) {
+  return (
+    <div className="update-blocker">
+      <div className="update-blocker-card">
+        <div className="update-blocker-icon">⚠</div>
+        <h2 className="update-blocker-title">Mise à jour requise</h2>
+        <p className="update-blocker-text">
+          Cette version de GONEXUM est obsolète et ne peut plus être utilisée.<br />
+          Mettez à jour pour continuer.
+        </p>
+        <div className="update-blocker-versions">
+          <div><span className="text-muted">Version installée</span><span>v{current}</span></div>
+          <div><span className="text-success"><strong>Dernière version</strong></span><span><strong>v{latest}</strong></span></div>
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={() => BrowserOpenURL(url)}
+          style={{ padding: '10px 24px' }}
+        >↗ Télécharger la mise à jour</button>
+      </div>
+    </div>
+  )
+}
 
 const NAV_ITEMS = [
   { to: '/', label: 'Uploader', icon: '↑' },
@@ -18,6 +43,7 @@ export default function Layout({ children }: LayoutProps) {
   const [configured, setConfigured] = React.useState<boolean>(true)
   const [update, setUpdate] = React.useState<{ version: string; url: string } | null>(null)
   const [appVersion, setAppVersion] = React.useState('')
+  const [outdated, setOutdated] = React.useState<{ current: string; latest: string; url: string } | null>(null)
 
   React.useEffect(() => {
     AppLoadSettings()
@@ -28,9 +54,18 @@ export default function Layout({ children }: LayoutProps) {
   React.useEffect(() => {
     GetAppVersion().then(v => setAppVersion(v)).catch(() => {})
     CheckUpdate()
-      .then(info => { if (info.available) setUpdate({ version: info.latest, url: info.url }) })
+      .then(info => {
+        if (info.available) {
+          setUpdate({ version: info.latest, url: info.url })
+          setOutdated({ current: info.current, latest: info.latest, url: info.url })
+        }
+      })
       .catch(() => {})
   }, []) // re-check after each navigation (e.g. after saving settings)
+
+  if (outdated) {
+    return <UpdateBlocker current={outdated.current} latest={outdated.latest} url={outdated.url} />
+  }
 
   return (
     <div className="layout">
