@@ -5,6 +5,18 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.0] - 2026-04-21
+
+### Ajouté
+- **Analyse automatique à l'ajout** : chaque fichier déposé déclenche immédiatement l'analyse (media info + recherche TMDB + pré-génération BBCode). Plus besoin d'ouvrir le modal d'édition pour voir ce qui a été détecté.
+- **Affichage inline des infos détectées** : chaque item de la queue affiche sous son nom le match TMDB (avec année et type), la catégorie, la résolution / codec / source / HDR, et les langues audio. Vue d'ensemble immédiate.
+- **Workflow de validation par item** : après analyse, les items passent en état "à valider" avec un bouton ✓ OK. Ils ne démarrent le traitement que lorsque l'utilisateur valide. Bouton "Tout valider" pour un batch rapide.
+- **Bouton ↻ ré-analyser** sur les items en erreur.
+
+### Modifié
+- Le modal d'édition reste accessible via ✎ pour corriger les détections, mais n'est plus nécessaire dans la majorité des cas.
+- Le compteur du bouton "▶ Lancer" reflète les items validés (prêts), plus les items en attente d'analyse.
+
 ## [3.0.1] - 2026-04-21
 
 ### Corrigé

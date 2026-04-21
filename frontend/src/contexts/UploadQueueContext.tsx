@@ -3,13 +3,31 @@ import {
   CreateTorrent, SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO,
   UploadTorrent, DownloadTorrent, LargestVideoFile,
   AppLoadSettings, GenerateBBCode, CheckDuplicate, SaveHistoryEntry,
+  GetCategories,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import type { ItemOverrides } from '../components/ItemEditor'
 
-export type QueueItemStatus = 'pending' | 'processing' | 'done' | 'error'
+export type QueueItemStatus =
+  | 'analyzing'   // analyse auto en cours
+  | 'review'      // analyse terminée, attend validation
+  | 'ready'       // validé, prêt à traiter
+  | 'processing'  // traitement en cours
+  | 'done'        // terminé
+  | 'error'       // erreur
+
+export interface AnalysisResult {
+  releaseName: string
+  mediaInfo: main.MediaInfo
+  mediaInfoCLI: string
+  tmdb: main.TMDBDetails  // vide si aucun match
+  tmdbType: string
+  categoryId: number
+  categoryName: string
+  bbcodeDescription: string
+}
 
 export interface QueueItem {
   id: string
@@ -21,20 +39,26 @@ export interface QueueItem {
   uploadResult?: main.UploadResponse
   duplicateWarning?: { id: number; name: string; url: string }
   overrides?: ItemOverrides
+  analysis?: AnalysisResult
 }
 
 interface UploadQueueContextValue {
   queue: QueueItem[]
   running: boolean
   dragging: boolean
+  categories: { id: number; name: string }[]
   setDragging: (v: boolean) => void
   addPaths: (paths: string[]) => void
   updateItem: (id: string, patch: Partial<QueueItem>) => void
+  validate: (id: string) => void
+  unvalidate: (id: string) => void
+  validateAll: () => void
   remove: (id: string) => void
   clearDone: () => void
   clearAll: () => void
   start: () => Promise<void>
   stop: () => void
+  reanalyze: (id: string) => void
 }
 
 const UploadQueueContext = createContext<UploadQueueContextValue | null>(null)
@@ -45,40 +69,123 @@ function makeQueueItem(path: string): QueueItem {
     id: String(++_queueIdCounter),
     path,
     name: path.split(/[/\\]/).pop() ?? path,
-    status: 'pending',
+    status: 'analyzing',
   }
 }
+
+const DEFAULT_CATS = [
+  { id: 1, name: 'Films' }, { id: 2, name: 'Séries' },
+  { id: 3, name: 'Documentaires' }, { id: 4, name: 'Animés' },
+]
 
 export function UploadQueueProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [running, setRunning] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [categories, setCategories] = useState(DEFAULT_CATS)
   const queueRef = useRef<QueueItem[]>([])
   const runningRef = useRef(false)
 
   useEffect(() => { queueRef.current = queue }, [queue])
 
+  useEffect(() => {
+    GetCategories().then(c => { if (c?.length) setCategories(c) }).catch(() => {})
+  }, [])
+
   const updateItem = useCallback((id: string, patch: Partial<QueueItem>) => {
     setQueue(q => q.map(it => it.id === id ? { ...it, ...patch } : it))
   }, [])
+
+  // ─── Analyse automatique ────────────────────────────────────────────────
+  const analyzeItem = useCallback(async (id: string, path: string, fallbackName: string) => {
+    try {
+      // Media info
+      let mediaInfo: main.MediaInfo = {} as main.MediaInfo
+      let mediaInfoCLI = ''
+      try {
+        const videoPath = await LargestVideoFile(path)
+        const parsed = await getMediaInfoJS(videoPath)
+        mediaInfo = parsed as any
+        try { mediaInfoCLI = await getMediaInfoCLIText(videoPath) } catch { /* */ }
+      } catch { /* */ }
+
+      // Determine release name without extension
+      const releaseName = fallbackName.replace(/\.(mkv|mp4|avi|mov|ts|m2ts|wmv)$/i, '')
+
+      // TMDB auto-search
+      let tmdb: main.TMDBDetails = {} as main.TMDBDetails
+      let tmdbType = 'movie'
+      try {
+        const results = await SearchTMDB(releaseName, '')
+        if (results && results.length > 0) {
+          tmdb = await GetTMDBDetails(results[0].id, results[0].mediaType)
+          tmdbType = results[0].mediaType
+        }
+      } catch { /* */ }
+
+      const categoryId = tmdbType === 'tv' ? 2 : 1
+      const category = categories.find(c => c.id === categoryId)?.name
+        || DEFAULT_CATS.find(c => c.id === categoryId)?.name
+        || ''
+
+      // BBCode description
+      const bbcode = await GenerateBBCode(releaseName, mediaInfoCLI).catch(() => '')
+      const description = bbcode || tmdb.overview || ''
+
+      updateItem(id, {
+        status: 'review',
+        analysis: {
+          releaseName,
+          mediaInfo, mediaInfoCLI,
+          tmdb, tmdbType,
+          categoryId, categoryName: category,
+          bbcodeDescription: description,
+        },
+      })
+
+      // Duplicate pre-check
+      CheckDuplicate(releaseName).then(dup => {
+        if (dup && dup.found) {
+          updateItem(id, {
+            duplicateWarning: { id: dup.id || 0, name: dup.name || '', url: dup.url || '' },
+          })
+        }
+      }).catch(() => {})
+    } catch (e) {
+      updateItem(id, { status: 'error', error: 'Analyse échouée : ' + String(e) })
+    }
+  }, [categories, updateItem])
 
   const addPaths = useCallback((paths: string[]) => {
     const existing = new Set(queueRef.current.map(i => i.path))
     const fresh = paths.filter(p => p && !existing.has(p)).map(makeQueueItem)
     if (fresh.length === 0) return
     setQueue(q => [...q, ...fresh])
-    fresh.forEach(item => {
-      CheckDuplicate(item.name).then(dup => {
-        if (dup && dup.found) {
-          updateItem(item.id, {
-            duplicateWarning: { id: dup.id || 0, name: dup.name || '', url: dup.url || '' },
-          })
-        }
-      }).catch(() => {})
-    })
+    // Lance l'analyse en parallèle pour chaque nouvel item
+    fresh.forEach(item => { analyzeItem(item.id, item.path, item.name) })
+  }, [analyzeItem])
+
+  const reanalyze = useCallback((id: string) => {
+    const item = queueRef.current.find(i => i.id === id)
+    if (!item) return
+    updateItem(id, { status: 'analyzing', analysis: undefined, overrides: undefined })
+    analyzeItem(id, item.path, item.name)
+  }, [analyzeItem, updateItem])
+
+  // ─── Validation ─────────────────────────────────────────────────────────
+  const validate = useCallback((id: string) => {
+    updateItem(id, { status: 'ready' })
   }, [updateItem])
 
-  // Global file drop — actif même hors de la page uploader
+  const unvalidate = useCallback((id: string) => {
+    updateItem(id, { status: 'review' })
+  }, [updateItem])
+
+  const validateAll = useCallback(() => {
+    setQueue(q => q.map(it => it.status === 'review' ? { ...it, status: 'ready' } : it))
+  }, [])
+
+  // Global file drop
   useEffect(() => {
     OnFileDrop((_x, _y, paths) => {
       if (paths.length === 0) return
@@ -88,49 +195,34 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
     return () => OnFileDropOff()
   }, [addPaths])
 
+  // ─── Traitement ─────────────────────────────────────────────────────────
   const processItem = async (item: QueueItem, nfoMode: string) => {
     const upd = (patch: Partial<QueueItem>) => updateItem(item.id, patch)
     upd({ status: 'processing', error: undefined, step: 'Création du torrent…' })
 
     const ov = item.overrides || {}
-    let catId = ov.categoryId ?? 1
+    const a = item.analysis
+    if (!a) { upd({ status: 'error', error: 'Analyse manquante' }); return }
+
+    const releaseName = ov.name || a.releaseName
+    const catId = ov.categoryId ?? a.categoryId
+    const tmdbType = ov.tmdbType || a.tmdbType
+    let tmdb: main.TMDBDetails = a.tmdb
+
     try {
-      const torrent = await CreateTorrent(item.path)
-      const releaseName = ov.name || torrent.name
-      upd({ name: releaseName, step: 'Analyse média…' })
-
-      let mi: main.MediaInfo = {} as main.MediaInfo
-      let cliText = ''
-      try {
-        const videoPath = await LargestVideoFile(item.path)
-        const parsed = await getMediaInfoJS(videoPath)
-        mi = parsed as any
-        try { cliText = await getMediaInfoCLIText(videoPath) } catch { /* */ }
-      } catch { /* non bloquant */ }
-
-      upd({ step: 'Recherche TMDB…' })
-      let tmdb: main.TMDBDetails = {} as main.TMDBDetails
-      let tmdbType = ov.tmdbType || 'movie'
-      if (ov.tmdbId && ov.tmdbId > 0) {
+      // If user picked a different TMDB via override, fetch its details
+      if (ov.tmdbId && ov.tmdbId > 0 && ov.tmdbId !== a.tmdb?.id) {
         try { tmdb = await GetTMDBDetails(ov.tmdbId, tmdbType) } catch { /* */ }
-      } else {
-        try {
-          const results = await SearchTMDB(releaseName, '')
-          if (results && results.length > 0) {
-            const details = await GetTMDBDetails(results[0].id, results[0].mediaType)
-            tmdb = details
-            tmdbType = results[0].mediaType
-            if (ov.categoryId === undefined) catId = tmdbType === 'tv' ? 2 : 1
-          }
-        } catch { /* non bloquant */ }
       }
 
-      upd({ step: 'Génération NFO…' })
+      const torrent = await CreateTorrent(item.path)
+      upd({ name: releaseName, step: 'Génération NFO…' })
+
       let nfo = ''
-      if (nfoMode === 'mediainfo' && cliText) {
-        nfo = cliText
+      if (nfoMode === 'mediainfo' && a.mediaInfoCLI) {
+        nfo = a.mediaInfoCLI
       } else {
-        nfo = await GenerateNFO(tmdb, mi, cliText)
+        nfo = await GenerateNFO(tmdb, a.mediaInfo, a.mediaInfoCLI)
       }
       try { await SaveNFO(nfo, releaseName) } catch { /* */ }
 
@@ -141,25 +233,23 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
       }
 
       upd({ step: 'Upload…' })
-      let desc = ov.description
-      if (!desc) {
-        desc = await GenerateBBCode(releaseName, cliText).catch(() => '') || tmdb.overview || ''
-      }
+      const desc = ov.description || a.bbcodeDescription
+
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,
         name: releaseName,
         categoryId: catId,
         description: desc,
-        tmdbId: tmdb.id || 0,
+        tmdbId: tmdb?.id || 0,
         tmdbType,
-        resolution: (mi as any).resolution || '',
-        videoCodec: (mi as any).videoCodec || '',
-        audioCodec: (mi as any).audioCodec || '',
-        audioLanguages: (mi as any).audioLanguages || '',
-        subtitleLanguages: (mi as any).subtitleLanguages || '',
-        hdrFormat: (mi as any).hdrFormat || '',
-        source: (mi as any).source || '',
+        resolution: (a.mediaInfo as any).resolution || '',
+        videoCodec: (a.mediaInfo as any).videoCodec || '',
+        audioCodec: (a.mediaInfo as any).audioCodec || '',
+        audioLanguages: (a.mediaInfo as any).audioLanguages || '',
+        subtitleLanguages: (a.mediaInfo as any).subtitleLanguages || '',
+        hdrFormat: (a.mediaInfo as any).hdrFormat || '',
+        source: (a.mediaInfo as any).source || '',
       })
 
       if (result.torrent_id) {
@@ -170,8 +260,8 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
         id: 0, createdAt: '', sourcePath: item.path,
         releaseName, torrentPath: torrent.filePath, nfoPath: '',
         infoHash: torrent.infoHash, size: torrent.size,
-        categoryId: catId, categoryName: '',
-        tmdbId: tmdb.id || 0, tmdbType, tmdbTitle: tmdb.title || '',
+        categoryId: catId, categoryName: a.categoryName,
+        tmdbId: tmdb?.id || 0, tmdbType, tmdbTitle: tmdb?.title || '',
         uploadUrl: result.url, uploadId: result.torrent_id,
         status: 'done', errorMsg: '', noUpload: false,
       } as main.HistoryEntry).catch(() => {})
@@ -180,9 +270,9 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
     } catch (e) {
       SaveHistoryEntry({
         id: 0, createdAt: '', sourcePath: item.path,
-        releaseName: item.name, torrentPath: '', nfoPath: '',
-        infoHash: '', size: 0, categoryId: catId, categoryName: '',
-        tmdbId: 0, tmdbType: '', tmdbTitle: '',
+        releaseName, torrentPath: '', nfoPath: '',
+        infoHash: '', size: 0, categoryId: catId, categoryName: a.categoryName,
+        tmdbId: tmdb?.id || 0, tmdbType, tmdbTitle: tmdb?.title || '',
         uploadUrl: '', uploadId: 0,
         status: 'error', errorMsg: String(e), noUpload: false,
       } as main.HistoryEntry).catch(() => {})
@@ -196,7 +286,7 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
     setRunning(true)
     const settings = await AppLoadSettings().catch(() => ({ nfoMode: 'nfo' } as any))
     while (runningRef.current) {
-      const next = queueRef.current.find(i => i.status === 'pending')
+      const next = queueRef.current.find(i => i.status === 'ready')
       if (!next) break
       await processItem(next, settings.nfoMode || 'nfo')
     }
@@ -215,8 +305,9 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
 
   return (
     <UploadQueueContext.Provider value={{
-      queue, running, dragging, setDragging,
-      addPaths, updateItem, remove, clearDone, clearAll, start, stop,
+      queue, running, dragging, categories, setDragging,
+      addPaths, updateItem, validate, unvalidate, validateAll,
+      remove, clearDone, clearAll, start, stop, reanalyze,
     }}>
       {children}
     </UploadQueueContext.Provider>
