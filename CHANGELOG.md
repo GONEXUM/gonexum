@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.2] - 2026-04-21
+
+### Corrigé
+- **Historique vide** : les entrées n'étaient pas sauvegardées car le champ `createdAt` envoyé sous forme de chaîne vide faisait échouer le `json.Unmarshal` côté Go (`time.Time` ne peut pas parser `""`). Désormais envoyé en ISO 8601. Les erreurs de save sont loggées dans la console au lieu d'être silencieusement ignorées.
+
 ## [3.1.1] - 2026-04-21
 
 ### Ajouté
