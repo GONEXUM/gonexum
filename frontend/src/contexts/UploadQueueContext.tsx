@@ -257,25 +257,25 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
       }
 
       SaveHistoryEntry({
-        id: 0, createdAt: '', sourcePath: item.path,
+        id: 0, createdAt: new Date().toISOString(), sourcePath: item.path,
         releaseName, torrentPath: torrent.filePath, nfoPath: '',
         infoHash: torrent.infoHash, size: torrent.size,
         categoryId: catId, categoryName: a.categoryName,
         tmdbId: tmdb?.id || 0, tmdbType, tmdbTitle: tmdb?.title || '',
         uploadUrl: result.url, uploadId: result.torrent_id,
         status: 'done', errorMsg: '', noUpload: false,
-      } as main.HistoryEntry).catch(() => {})
+      } as main.HistoryEntry).catch(e => console.error('SaveHistoryEntry failed:', e))
 
       upd({ status: 'done', step: undefined, uploadResult: result, name: releaseName })
     } catch (e) {
       SaveHistoryEntry({
-        id: 0, createdAt: '', sourcePath: item.path,
+        id: 0, createdAt: new Date().toISOString(), sourcePath: item.path,
         releaseName, torrentPath: '', nfoPath: '',
         infoHash: '', size: 0, categoryId: catId, categoryName: a.categoryName,
         tmdbId: tmdb?.id || 0, tmdbType, tmdbTitle: tmdb?.title || '',
         uploadUrl: '', uploadId: 0,
         status: 'error', errorMsg: String(e), noUpload: false,
-      } as main.HistoryEntry).catch(() => {})
+      } as main.HistoryEntry).catch(e => console.error('SaveHistoryEntry failed:', e))
       upd({ status: 'error', step: undefined, error: String(e) })
     }
   }
