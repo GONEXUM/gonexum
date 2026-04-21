@@ -445,7 +445,14 @@ func checkUpdate() {
 	latest := strings.TrimPrefix(release.TagName, "v")
 	current := strings.TrimPrefix(AppVersion, "v")
 	if latest != "" && latest != current && current != "dev" {
-		fmt.Printf("  ★ Nouvelle version disponible : v%s → %s\n\n", latest, release.HTMLURL)
+		fmt.Fprintf(os.Stderr, "\n╔══════════════════════════════════════════════════════╗\n")
+		fmt.Fprintf(os.Stderr, "║  MISE À JOUR REQUISE                                 ║\n")
+		fmt.Fprintf(os.Stderr, "╠══════════════════════════════════════════════════════╣\n")
+		fmt.Fprintf(os.Stderr, "║  Version installée : v%-30s ║\n", current)
+		fmt.Fprintf(os.Stderr, "║  Dernière version  : v%-30s ║\n", latest)
+		fmt.Fprintf(os.Stderr, "╚══════════════════════════════════════════════════════╝\n\n")
+		fmt.Fprintf(os.Stderr, "  Téléchargez la nouvelle version :\n  %s\n\n", release.HTMLURL)
+		os.Exit(1)
 	}
 }
 
