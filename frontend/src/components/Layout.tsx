@@ -1,7 +1,7 @@
 import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { AppLoadSettings, CheckUpdate, GetAppVersion } from '../../wailsjs/go/main/App'
-import { BrowserOpenURL } from '../../wailsjs/runtime/runtime'
+import { BrowserOpenURL, Quit } from '../../wailsjs/runtime/runtime'
 import './Layout.css'
 
 function UpdateBlocker({ current, latest, url }: { current: string; latest: string; url: string }) {
@@ -20,7 +20,11 @@ function UpdateBlocker({ current, latest, url }: { current: string; latest: stri
         </div>
         <button
           className="btn btn-primary"
-          onClick={() => BrowserOpenURL(url)}
+          onClick={() => {
+            BrowserOpenURL(url)
+            // Laisse le temps au navigateur de s'ouvrir avant de quitter
+            setTimeout(() => Quit(), 300)
+          }}
           style={{ padding: '10px 24px' }}
         >↗ Télécharger la mise à jour</button>
       </div>
