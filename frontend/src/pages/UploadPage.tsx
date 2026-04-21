@@ -8,6 +8,7 @@ import {
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { BrowserOpenURL, OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
+import ItemEditor, { ItemOverrides } from '../components/ItemEditor'
 import './UploadPage.css'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ interface QueueItem {
   error?: string
   uploadResult?: main.UploadResponse
   duplicateWarning?: { id: number; name: string; url: string }
+  overrides?: ItemOverrides
 }
 
 let _queueIdCounter = 0
@@ -49,6 +51,7 @@ export default function UploadPage() {
   const [queue, setQueue] = useState<QueueItem[]>([])
   const [running, setRunning] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const queueRef = useRef<QueueItem[]>([])
   const runningRef = useRef(false)
 
@@ -93,10 +96,13 @@ export default function UploadPage() {
     const upd = (patch: Partial<QueueItem>) => updateItem(item.id, patch)
     upd({ status: 'processing', error: undefined, step: 'Création du torrent…' })
 
-    let catId = 1
+    const ov = item.overrides || {}
+    let catId = ov.categoryId ?? 1
     try {
       const torrent = await CreateTorrent(item.path)
-      upd({ name: torrent.name, step: 'Analyse média…' })
+      // Apply name override if any
+      const releaseName = ov.name || torrent.name
+      upd({ name: releaseName, step: 'Analyse média…' })
 
       let mi: main.MediaInfo = {} as main.MediaInfo
       let cliText = ''
@@ -109,16 +115,25 @@ export default function UploadPage() {
 
       upd({ step: 'Recherche TMDB…' })
       let tmdb: main.TMDBDetails = {} as main.TMDBDetails
-      let tmdbType = 'movie'
-      try {
-        const results = await SearchTMDB(torrent.name, '')
-        if (results && results.length > 0) {
-          const details = await GetTMDBDetails(results[0].id, results[0].mediaType)
-          tmdb = details
-          tmdbType = results[0].mediaType
-          catId = tmdbType === 'tv' ? 2 : 1
-        }
-      } catch { /* non bloquant */ }
+      let tmdbType = ov.tmdbType || 'movie'
+      if (ov.tmdbId && ov.tmdbId > 0) {
+        // User-selected TMDB match
+        try {
+          tmdb = await GetTMDBDetails(ov.tmdbId, tmdbType)
+        } catch { /* non bloquant */ }
+      } else {
+        try {
+          const results = await SearchTMDB(releaseName, '')
+          if (results && results.length > 0) {
+            const details = await GetTMDBDetails(results[0].id, results[0].mediaType)
+            tmdb = details
+            tmdbType = results[0].mediaType
+            if (ov.categoryId === undefined) {
+              catId = tmdbType === 'tv' ? 2 : 1
+            }
+          }
+        } catch { /* non bloquant */ }
+      }
 
       upd({ step: 'Génération NFO…' })
       let nfo = ''
@@ -127,22 +142,25 @@ export default function UploadPage() {
       } else {
         nfo = await GenerateNFO(tmdb, mi, cliText)
       }
-      try { await SaveNFO(nfo, torrent.name) } catch { /* non bloquant */ }
+      try { await SaveNFO(nfo, releaseName) } catch { /* non bloquant */ }
 
       upd({ step: 'Vérification doublon…' })
-      const dup = await CheckDuplicate(torrent.name).catch(() => null)
+      const dup = await CheckDuplicate(releaseName).catch(() => null)
       if (dup && dup.found) {
         throw new Error(`Doublon sur nexum : ${dup.name} (ID #${dup.id})`)
       }
 
       upd({ step: 'Upload…' })
-      const bbDesc = await GenerateBBCode(torrent.name, cliText).catch(() => '')
+      let desc = ov.description
+      if (!desc) {
+        desc = await GenerateBBCode(releaseName, cliText).catch(() => '') || tmdb.overview || ''
+      }
       const result = await UploadTorrent({
         torrentPath: torrent.filePath,
         nfoContent: nfo,
-        name: torrent.name,
+        name: releaseName,
         categoryId: catId,
-        description: bbDesc || tmdb.overview || '',
+        description: desc,
         tmdbId: tmdb.id || 0,
         tmdbType,
         resolution: (mi as any).resolution || '',
@@ -160,7 +178,7 @@ export default function UploadPage() {
 
       SaveHistoryEntry({
         id: 0, createdAt: '', sourcePath: item.path,
-        releaseName: torrent.name, torrentPath: torrent.filePath, nfoPath: '',
+        releaseName, torrentPath: torrent.filePath, nfoPath: '',
         infoHash: torrent.infoHash, size: torrent.size,
         categoryId: catId, categoryName: '',
         tmdbId: tmdb.id || 0, tmdbType, tmdbTitle: tmdb.title || '',
@@ -168,7 +186,7 @@ export default function UploadPage() {
         status: 'done', errorMsg: '', noUpload: false,
       } as main.HistoryEntry).catch(() => {})
 
-      upd({ status: 'done', step: undefined, uploadResult: result, name: torrent.name })
+      upd({ status: 'done', step: undefined, uploadResult: result, name: releaseName })
     } catch (e) {
       SaveHistoryEntry({
         id: 0, createdAt: '', sourcePath: item.path,
@@ -294,7 +312,19 @@ export default function UploadPage() {
               <div key={item.id} className={`queue-item queue-item--${item.status}`}>
                 <div className="queue-item-status">{statusIcon(item.status)}</div>
                 <div className="queue-item-info">
-                  <div className="queue-item-name">{item.name}</div>
+                  <div className="queue-item-name">
+                    {item.name}
+                    {item.overrides && Object.keys(item.overrides).length > 0 && (
+                      <span
+                        title="Personnalisé"
+                        style={{
+                          marginLeft: 8, fontSize: 10, padding: '1px 6px',
+                          background: 'var(--color-accent-dim)', color: 'var(--color-accent)',
+                          borderRadius: 10, fontWeight: 600,
+                        }}
+                      >✎</span>
+                    )}
+                  </div>
                   {item.status === 'processing' && item.step && (
                     <div className="queue-item-step">{item.step}</div>
                   )}
@@ -328,16 +358,43 @@ export default function UploadPage() {
                   )}
                 </div>
                 {item.status === 'pending' && !running && (
-                  <button
-                    className="btn btn-ghost btn-xs queue-item-remove"
-                    onClick={() => remove(item.id)}
-                  >✕</button>
+                  <>
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => setEditingId(item.id)}
+                      title="Éditer (TMDB, nom, description, catégorie)"
+                    >✎</button>
+                    <button
+                      className="btn btn-ghost btn-xs queue-item-remove"
+                      onClick={() => remove(item.id)}
+                    >✕</button>
+                  </>
                 )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {editingId && (() => {
+        const item = queue.find(i => i.id === editingId)
+        if (!item) return null
+        return (
+          <ItemEditor
+            path={item.path}
+            initialName={item.name}
+            initial={item.overrides || {}}
+            onCancel={() => setEditingId(null)}
+            onSave={(overrides) => {
+              updateItem(item.id, {
+                overrides,
+                name: overrides.name || item.name,
+              })
+              setEditingId(null)
+            }}
+          />
+        )
+      })()}
     </div>
   )
 }
