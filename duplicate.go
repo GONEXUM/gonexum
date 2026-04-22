@@ -56,11 +56,17 @@ func checkDuplicate(releaseName string, settings Settings) (DuplicateCheckResult
 	if result.Total == 0 || len(result.Torrents) == 0 {
 		return DuplicateCheckResult{}, nil
 	}
-	t := result.Torrents[0]
-	return DuplicateCheckResult{
-		Found: true,
-		ID:    t.ID,
-		Name:  t.Name,
-		URL:   fmt.Sprintf("%s/torrents/%d", settings.TrackerURL, t.ID),
-	}, nil
+	// L'API fait du fuzzy match — on vérifie l'égalité stricte
+	// après normalisation pour éviter les faux positifs (ex: dates différentes).
+	for _, t := range result.Torrents {
+		if normalizeName(t.Name) == q {
+			return DuplicateCheckResult{
+				Found: true,
+				ID:    t.ID,
+				Name:  t.Name,
+				URL:   fmt.Sprintf("%s/torrents/%d", settings.TrackerURL, t.ID),
+			}, nil
+		}
+	}
+	return DuplicateCheckResult{}, nil
 }
