@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.4] - 2026-04-22
+
+### Corrigé
+- **Faux positifs de détection de doublons** : l'API nexum `/api/v1/torrents?q=...` fait un fuzzy match, ce qui renvoyait par exemple `WWE.RAW.2026.04.20...` comme doublon de `WWE.RAW.2026.04.13...`. `checkDuplicate` compare désormais le nom normalisé exact avant de marquer un doublon.
+
 ## [3.1.3] - 2026-04-21
 
 ### Corrigé
