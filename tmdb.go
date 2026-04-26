@@ -11,9 +11,9 @@ import (
 )
 
 // nexumTMDBBase est injecté via -ldflags "-X main.nexumTMDBBase=..."
-var nexumTMDBBase = "<TMDB_PROXY_URL>"
+var nexumTMDBBase = ""
 
-// nexumSearchResult matches the API response from <TMDB_PROXY>
+// nexumSearchResult matches the API response from the nexum TMDB proxy
 // Genres can be either a space-separated string or a JSON array of strings
 type nexumSearchResult struct {
 	Title         string          `json:"title"`
@@ -108,6 +108,9 @@ func (a *App) SearchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 }
 
 func searchTMDBProxy(query string, mediaType string) ([]TMDBResult, error) {
+	if nexumTMDBBase == "" {
+		return nil, nil // proxy non configuré → fallback direct
+	}
 	params := url.Values{}
 	params.Set("t", "search")
 	params.Set("q", query)
@@ -182,6 +185,9 @@ func (a *App) GetTMDBDetails(id int, mediaType string) (TMDBDetails, error) {
 }
 
 func getTMDBDetailsProxy(id int, mediaType string) (TMDBDetails, error) {
+	if nexumTMDBBase == "" {
+		return TMDBDetails{}, nil // proxy non configuré
+	}
 	t := "movie"
 	if mediaType == "tv" {
 		t = "tv"

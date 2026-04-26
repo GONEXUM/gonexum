@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.8] - 2026-04-22
+
+### Sécurité
+- **URL du proxy TMDB retirée du code source** : la valeur par défaut hardcodée dans `tmdb.go` (3 occurrences) annulait l'effet du secret GitHub `TMDB_PROXY_URL`. Désormais la valeur par défaut est `""` ; le proxy n'est utilisé que si la variable est injectée au build via ldflags. Sans secret, le code passe directement à l'API TMDB officielle (avec `TMDB_API_KEY`).
+
 ## [3.1.7] - 2026-04-22
 
 ### Corrigé
