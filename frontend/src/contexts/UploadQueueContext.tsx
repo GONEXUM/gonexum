@@ -6,7 +6,7 @@ import {
   GetCategories,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
-import { OnFileDrop, OnFileDropOff } from '../../wailsjs/runtime/runtime'
+import { OnFileDrop, OnFileDropOff, EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
 import type { main } from '../../wailsjs/go/models'
 import type { ItemOverrides } from '../components/ItemEditor'
 
@@ -35,6 +35,7 @@ export interface QueueItem {
   name: string
   status: QueueItemStatus
   step?: string
+  progress?: number  // 0..100 pendant le hashing
   error?: string
   uploadResult?: main.UploadResponse
   duplicateWarning?: { id: number; name: string; url: string }
@@ -85,6 +86,7 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
   const [categories, setCategories] = useState(DEFAULT_CATS)
   const queueRef = useRef<QueueItem[]>([])
   const runningRef = useRef(false)
+  const currentItemIdRef = useRef<string | null>(null)
 
   useEffect(() => { queueRef.current = queue }, [queue])
 
@@ -195,10 +197,29 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
     return () => OnFileDropOff()
   }, [addPaths])
 
+  // Suivi de la progression du hashing (event émis par CreateTorrent côté Go)
+  useEffect(() => {
+    EventsOn('torrent:progress', (data: any) => {
+      const id = currentItemIdRef.current
+      if (!id) return
+      const pct = typeof data?.percent === 'number' ? data.percent : 0
+      const phase = data?.phase as string
+      let step = 'Création du torrent…'
+      if (phase === 'hashing') {
+        step = `Hashing ${pct.toFixed(1)}%`
+      } else if (phase === 'writing') {
+        step = 'Écriture du torrent…'
+      }
+      updateItem(id, { step, progress: pct })
+    })
+    return () => EventsOff('torrent:progress')
+  }, [updateItem])
+
   // ─── Traitement ─────────────────────────────────────────────────────────
   const processItem = async (item: QueueItem, nfoMode: string) => {
     const upd = (patch: Partial<QueueItem>) => updateItem(item.id, patch)
-    upd({ status: 'processing', error: undefined, step: 'Création du torrent…' })
+    currentItemIdRef.current = item.id
+    upd({ status: 'processing', error: undefined, step: 'Création du torrent…', progress: 0 })
 
     const ov = item.overrides || {}
     const a = item.analysis
@@ -266,8 +287,10 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
         status: 'done', errorMsg: '', noUpload: false,
       } as main.HistoryEntry).catch(e => console.error('SaveHistoryEntry failed:', e))
 
-      upd({ status: 'done', step: undefined, uploadResult: result, name: releaseName })
+      currentItemIdRef.current = null
+      upd({ status: 'done', step: undefined, progress: undefined, uploadResult: result, name: releaseName })
     } catch (e) {
+      currentItemIdRef.current = null
       SaveHistoryEntry({
         id: 0, createdAt: new Date().toISOString(), sourcePath: item.path,
         releaseName, torrentPath: '', nfoPath: '',
@@ -276,7 +299,7 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
         uploadUrl: '', uploadId: 0,
         status: 'error', errorMsg: String(e), noUpload: false,
       } as main.HistoryEntry).catch(e => console.error('SaveHistoryEntry failed:', e))
-      upd({ status: 'error', step: undefined, error: String(e) })
+      upd({ status: 'error', step: undefined, progress: undefined, error: String(e) })
     }
   }
 

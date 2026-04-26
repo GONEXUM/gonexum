@@ -638,3 +638,19 @@
   padding: 3px 8px;
   font-size: 11px;
 }
+
+.qi-progress-bar {
+  margin-top: 6px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  height: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.qi-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-hover));
+  border-radius: 20px;
+  transition: width .3s ease;
+  box-shadow: 0 0 8px rgba(249, 115, 22, .4);
+}

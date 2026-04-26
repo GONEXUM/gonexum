@@ -201,8 +201,15 @@ function QueueItemCard({ item, running, onValidate, onUnvalidate, onEdit, onRemo
               <span className="qi-edited-badge" title="Personnalisé">✎</span>
             )}
           </div>
-          {item.status === 'processing' && item.step && (
-            <div className="queue-item-step">{item.step}</div>
+          {item.status === 'processing' && (
+            <>
+              {item.step && <div className="queue-item-step">{item.step}</div>}
+              {typeof item.progress === 'number' && (
+                <div className="qi-progress-bar">
+                  <div className="qi-progress-fill" style={{ width: `${item.progress}%` }} />
+                </div>
+              )}
+            </>
           )}
         </div>
         <div className="queue-item-actions">

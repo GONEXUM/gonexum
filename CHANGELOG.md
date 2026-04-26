@@ -5,6 +5,14 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.5] - 2026-04-22
+
+### Ajouté
+- **Barre de progression** lors de la création du fichier .torrent (hashing) sur l'item en cours dans la queue desktop. Le step affiche le pourcentage en temps réel.
+
+### Modifié
+- **Performance hashing** : buffer de lecture passé de 256 KB à 4 MB (CLI, Web, Desktop). Réduit drastiquement le nombre de syscalls et accélère le hashing des gros fichiers (films 4K, séries).
+
 ## [3.1.4] - 2026-04-22
 
 ### Corrigé
