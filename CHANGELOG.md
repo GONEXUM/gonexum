@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.7] - 2026-04-22
+
+### Corrigé
+- **Proxy TMDB nexum cassé silencieusement** : le proxy renvoyait `years` et `tmdb_id` sous forme de **nombre** JSON (`2024`, `82452`) alors que les structs Go attendaient des `string`. Le `json.Unmarshal` échouait pour chaque résultat → "Aucun match" affiché et fallback API officielle déclenché inutilement. Les deux champs sont désormais en `json.RawMessage` avec helpers `parseYears` / `parseTmdbID` tolérants au type.
+
 ## [3.1.6] - 2026-04-22
 
 ### Corrigé

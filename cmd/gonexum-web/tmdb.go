@@ -15,7 +15,7 @@ var nexumTMDBBase = "<TMDB_PROXY_URL>"
 
 type nexumSearchResult struct {
 	Title         string          `json:"title"`
-	Years         string          `json:"years"`
+	Years         json.RawMessage `json:"years"`
 	EnglishTitle  string          `json:"english_title"`
 	OriginalTitle string          `json:"original_title"`
 	Poster        string          `json:"poster"`
@@ -148,7 +148,7 @@ func searchTMDBProxy(query string, mediaType string) ([]TMDBResult, error) {
 		results = append(results, TMDBResult{
 			ID:         id,
 			Title:      title,
-			Year:       r.Years,
+			Year:       parseYears(r.Years),
 			PosterPath: r.Poster,
 			MediaType:  mt,
 			Overview:   r.Overview,
@@ -238,6 +238,23 @@ func getTMDBDetailsProxy(id int, mediaType string) (TMDBDetails, error) {
 }
 
 // parseTmdbID handles both string ("550") and integer (550) JSON values.
+// parseYears handles years field which may be a JSON number (2024)
+// or a string ("2024") depending on the proxy version.
+func parseYears(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil && n > 0 {
+		return strconv.Itoa(n)
+	}
+	return ""
+}
+
 func parseTmdbID(raw json.RawMessage) int {
 	if len(raw) == 0 {
 		return 0

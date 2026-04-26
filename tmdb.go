@@ -17,7 +17,7 @@ var nexumTMDBBase = "<TMDB_PROXY_URL>"
 // Genres can be either a space-separated string or a JSON array of strings
 type nexumSearchResult struct {
 	Title         string          `json:"title"`
-	Years         string          `json:"years"`
+	Years         json.RawMessage `json:"years"`
 	EnglishTitle  string          `json:"english_title"`
 	OriginalTitle string          `json:"original_title"`
 	Poster        string          `json:"poster"`
@@ -29,7 +29,7 @@ type nexumSearchResult struct {
 	ImdbURL       string          `json:"imdb_url"`
 	NoteImdb      float64         `json:"note_imdb"`
 	VoteImdb      int             `json:"vote_imdb"`
-	TmdbID        string          `json:"tmdb_id"`
+	TmdbID        json.RawMessage `json:"tmdb_id"`
 	TmdbURL       string          `json:"tmdb_url"`
 	ApiURL        string          `json:"api_url"`
 	NoteTmdb      float64         `json:"note_tmdb"`
@@ -139,10 +139,7 @@ func searchTMDBProxy(query string, mediaType string) ([]TMDBResult, error) {
 	var results []TMDBResult
 	for _, r := range raw.Results {
 		title := bestTitle(r)
-		id := 0
-		if r.TmdbID != "" {
-			id, _ = strconv.Atoi(r.TmdbID)
-		}
+		id := parseTmdbID(r.TmdbID)
 		if id == 0 {
 			continue
 		}
@@ -159,7 +156,7 @@ func searchTMDBProxy(query string, mediaType string) ([]TMDBResult, error) {
 		results = append(results, TMDBResult{
 			ID:         id,
 			Title:      title,
-			Year:       r.Years,
+			Year:       parseYears(r.Years),
 			PosterPath: r.Poster,
 			MediaType:  mt,
 			Overview:   r.Overview,
@@ -298,4 +295,38 @@ func parseRuntime(s string) int {
 		}
 	}
 	return total
+}
+
+// parseYears handles years field which may be a JSON number (2024)
+// or a string ("2024") depending on the proxy version.
+func parseYears(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil && n > 0 {
+		return strconv.Itoa(n)
+	}
+	return ""
+}
+
+// parseTmdbID handles tmdb_id field which may be a JSON number or a string.
+func parseTmdbID(raw json.RawMessage) int {
+	if len(raw) == 0 {
+		return 0
+	}
+	var n int
+	if err := json.Unmarshal(raw, &n); err == nil {
+		return n
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		n, _ = strconv.Atoi(s)
+		return n
+	}
+	return 0
 }
