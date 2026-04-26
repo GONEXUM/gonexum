@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.6] - 2026-04-22
+
+### Corrigé
+- **Détection movie/tv en fallback** : quand le proxy nexum ne renvoyait pas de résultat (ex: `Avatar.The.Last.Airbender.2024.S01.MULTI.1080p.WEB`), le fallback API officielle TMDB tapait par défaut sur `/search/movie` et ratait les séries. Une heuristique `detectMediaType` regarde maintenant les marqueurs `S01` / `S01E02` dans le nom pour basculer sur `/search/tv`. En dernier recours, le type opposé est aussi essayé.
+
 ## [3.1.5] - 2026-04-22
 
 ### Ajouté

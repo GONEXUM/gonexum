@@ -24,6 +24,15 @@ var (
 	reTech   = regexp.MustCompile(`(?i)\b(1080[ip]|720p|2160p|480p|4k|uhd|bluray|bdrip|bdremux|remux|web[-.]?dl|webrip|hdtv|dvdrip|dcp|x26[45]|hevc|avc|h\.?26[45]|dts(?:-hd(?:.ma)?)?|ac3|eac3|aac|truehd|flac|atmos|french|english|multi|vostfr|truefrench|proper|repack|internal|limited|10bit|8bit|hdr(?:10(?:\+)?)?|sdr|dv|dolby|vision|ita|spa|ger|jpn)\b`)
 )
 
+// detectMediaType retourne "tv" si le nom contient un marqueur saison (S01, S01E02, …),
+// "movie" sinon. Sert de fallback quand le proxy ne renvoie rien.
+func detectMediaType(name string) string {
+	if reSeason.MatchString(name) {
+		return "tv"
+	}
+	return "movie"
+}
+
 // parseReleaseName extracts the title and year from a scene-style release name.
 // Stops at the first occurrence of: year, SxxExx, or a technical token.
 // Ex: "Fight.Club.1999.1080p.BluRay.x264-GROUP" → ("Fight Club", 1999)

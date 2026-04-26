@@ -84,8 +84,22 @@ func (a *App) SearchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	if err == nil && len(results) > 0 {
 		return results, nil
 	}
-	if direct, derr := searchTMDBDirect(query, mediaType); derr == nil && len(direct) > 0 {
+	// Fallback API officielle : auto-détecte movie/tv depuis le nom si non précisé
+	dt := mediaType
+	if dt == "" {
+		dt = detectMediaType(query)
+	}
+	if direct, derr := searchTMDBDirect(query, dt); derr == nil && len(direct) > 0 {
 		return direct, nil
+	}
+	if mediaType == "" {
+		other := "movie"
+		if dt == "movie" {
+			other = "tv"
+		}
+		if direct, derr := searchTMDBDirect(query, other); derr == nil && len(direct) > 0 {
+			return direct, nil
+		}
 	}
 	if err != nil {
 		return nil, err
