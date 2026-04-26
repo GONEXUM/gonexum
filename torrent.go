@@ -119,7 +119,7 @@ func hashPieces(files []fileEntry, pieceLength int64, totalBytes int64, onProgre
 			return nil, err
 		}
 
-		buf := make([]byte, 256*1024)
+		buf := make([]byte, 4*1024*1024)
 		for {
 			n, readErr := fh.Read(buf)
 			if n > 0 {
