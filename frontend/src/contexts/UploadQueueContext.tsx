@@ -119,11 +119,13 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
       let tmdbType = 'movie'
       try {
         const results = await SearchTMDB(releaseName, '')
+        console.log('[TMDB] search results:', results)
         if (results && results.length > 0) {
           tmdb = await GetTMDBDetails(results[0].id, results[0].mediaType)
           tmdbType = results[0].mediaType
+          console.log('[TMDB] details:', tmdb, 'posterPath:', tmdb?.posterPath)
         }
-      } catch { /* */ }
+      } catch (e) { console.error('[TMDB] error:', e) }
 
       const categoryId = tmdbType === 'tv' ? 2 : 1
       const category = categories.find(c => c.id === categoryId)?.name
