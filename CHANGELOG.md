@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.9] - 2026-04-27
+
+### Corrigé
+- **Sortie mediainfo desktop non conforme au format CLI** : la fonction `getMediaInfoCLIText` reconstruisait le format texte à partir de l'objet JSON (sections, padding, unités), ce qui produisait un résultat différent du binaire `mediainfo`. La sortie est maintenant produite directement par `mediainfo.js` en mode `text` — strictement identique au CLI standard. ~150 lignes de formatage manuel supprimées.
+
 ## [3.1.8] - 2026-04-22
 
 ### Sécurité
