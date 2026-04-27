@@ -1,5 +1,7 @@
 package main
 
+import "encoding/json"
+
 // TorrentResult is returned after creating a .torrent file
 type TorrentResult struct {
 	FilePath string `json:"filePath"`
@@ -36,6 +38,39 @@ type TMDBResult struct {
 	Popularity float64 `json:"popularity"`
 }
 
+// UnmarshalJSON accepte aussi les conventions TMDB (poster_path, media_type, release_date).
+func (r *TMDBResult) UnmarshalJSON(data []byte) error {
+	type alias TMDBResult
+	aux := struct {
+		*alias
+		PosterPathSnake string `json:"poster_path"`
+		MediaTypeSnake  string `json:"media_type"`
+		Name            string `json:"name"`
+		ReleaseDate     string `json:"release_date"`
+		FirstAirDate    string `json:"first_air_date"`
+	}{alias: (*alias)(r)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if r.PosterPath == "" && aux.PosterPathSnake != "" {
+		r.PosterPath = aux.PosterPathSnake
+	}
+	if r.MediaType == "" && aux.MediaTypeSnake != "" {
+		r.MediaType = aux.MediaTypeSnake
+	}
+	if r.Title == "" && aux.Name != "" {
+		r.Title = aux.Name
+	}
+	if r.Year == "" {
+		if len(aux.ReleaseDate) >= 4 {
+			r.Year = aux.ReleaseDate[:4]
+		} else if len(aux.FirstAirDate) >= 4 {
+			r.Year = aux.FirstAirDate[:4]
+		}
+	}
+	return nil
+}
+
 // TMDBDetails holds full details of a movie or TV show
 type TMDBDetails struct {
 	ID         int      `json:"id"`
@@ -48,6 +83,43 @@ type TMDBDetails struct {
 	Director   string   `json:"director"`
 	Rating     float64  `json:"rating"`
 	Runtime    int      `json:"runtime"`
+}
+
+// UnmarshalJSON accepte aussi le format brut TMDB (poster_path, name, release_date, first_air_date, vote_average).
+func (d *TMDBDetails) UnmarshalJSON(data []byte) error {
+	type alias TMDBDetails
+	aux := struct {
+		*alias
+		PosterPathSnake string  `json:"poster_path"`
+		MediaTypeSnake  string  `json:"media_type"`
+		Name            string  `json:"name"`
+		ReleaseDate     string  `json:"release_date"`
+		FirstAirDate    string  `json:"first_air_date"`
+		VoteAverage     float64 `json:"vote_average"`
+	}{alias: (*alias)(d)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if d.PosterPath == "" && aux.PosterPathSnake != "" {
+		d.PosterPath = aux.PosterPathSnake
+	}
+	if d.MediaType == "" && aux.MediaTypeSnake != "" {
+		d.MediaType = aux.MediaTypeSnake
+	}
+	if d.Title == "" && aux.Name != "" {
+		d.Title = aux.Name
+	}
+	if d.Year == "" {
+		if len(aux.ReleaseDate) >= 4 {
+			d.Year = aux.ReleaseDate[:4]
+		} else if len(aux.FirstAirDate) >= 4 {
+			d.Year = aux.FirstAirDate[:4]
+		}
+	}
+	if d.Rating == 0 && aux.VoteAverage > 0 {
+		d.Rating = aux.VoteAverage
+	}
+	return nil
 }
 
 // UploadParams holds all parameters needed for the nexum upload
@@ -99,5 +171,5 @@ type Settings struct {
 	TrackerURL  string `json:"trackerUrl"`
 	OutputDir   string `json:"outputDir"`
 	NFOTemplate string `json:"nfoTemplate"`
-	NFOMode     string `json:"nfoMode"`
+	NFOMode     string `json:"nfoMode"` // "nfo" (défaut) ou "mediainfo"
 }

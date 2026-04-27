@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.10] - 2026-04-27
+
+### Corrigé
+- **Désérialisation TMDB plus tolérante** : `TMDBResult` et `TMDBDetails` acceptent désormais aussi le format brut TMDB (`poster_path`, `media_type`, `name`, `release_date`, `first_air_date`, `vote_average`) en plus de la convention camelCase utilisée par Wails. Custom `UnmarshalJSON` ajouté pour mapper les deux conventions au même champ Go. Évite les `posterPath` vides si une struct TMDBDetails est désérialisée depuis un JSON snake_case.
+
 ## [3.1.9] - 2026-04-27
 
 ### Corrigé
