@@ -5,6 +5,11 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.11] - 2026-04-27
+
+### Corrigé
+- **Poster manquant après sélection manuelle TMDB** : quand on changeait le match TMDB via le modal d'édition, seuls le titre et l'ID étaient stockés en override — le poster restait celui de l'analyse initiale (ou vide si l'analyse n'avait rien trouvé). Désormais le `posterPath` est aussi capturé lors du `pickTMDB` et la card priorise l'override sur l'analyse initiale.
+
 ## [3.1.10] - 2026-04-27
 
 ### Corrigé

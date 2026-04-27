@@ -11,6 +11,7 @@ export interface ItemOverrides {
   tmdbId?: number
   tmdbType?: string
   tmdbTitle?: string
+  tmdbPosterPath?: string
 }
 
 interface ItemEditorProps {
@@ -28,6 +29,7 @@ export default function ItemEditor({ path, initialName, initial, onCancel, onSav
   const [tmdbId, setTmdbId] = useState(initial.tmdbId || 0)
   const [tmdbType, setTmdbType] = useState(initial.tmdbType || 'movie')
   const [tmdbTitle, setTmdbTitle] = useState(initial.tmdbTitle || '')
+  const [tmdbPosterPath, setTmdbPosterPath] = useState(initial.tmdbPosterPath || '')
   const [tmdbQuery, setTmdbQuery] = useState(initial.name || initialName)
   const [tmdbResults, setTmdbResults] = useState<main.TMDBResult[]>([])
   const [tmdbSearching, setTmdbSearching] = useState(false)
@@ -72,19 +74,22 @@ export default function ItemEditor({ path, initialName, initial, onCancel, onSav
     setTmdbId(r.id)
     setTmdbType(r.mediaType)
     setTmdbTitle(r.title)
+    setTmdbPosterPath(r.posterPath || '')
     // Auto-adjust category based on media type
     if (r.mediaType === 'tv') setCategoryId(2)
     else if (categoryId === 2) setCategoryId(1)
-    // Refresh description with richer TMDB data
+    // Refresh details to get richer data (and confirm posterPath)
     try {
       const details = await GetTMDBDetails(r.id, r.mediaType)
       setTmdbTitle(details.title || r.title)
+      if (details.posterPath) setTmdbPosterPath(details.posterPath)
     } catch { /* ignore */ }
   }
 
   const clearTMDB = () => {
     setTmdbId(0)
     setTmdbTitle('')
+    setTmdbPosterPath('')
   }
 
   const save = () => {
@@ -95,6 +100,7 @@ export default function ItemEditor({ path, initialName, initial, onCancel, onSav
       tmdbId: tmdbId > 0 ? tmdbId : undefined,
       tmdbType: tmdbId > 0 ? tmdbType : undefined,
       tmdbTitle: tmdbTitle || undefined,
+      tmdbPosterPath: tmdbPosterPath || undefined,
     })
   }
 

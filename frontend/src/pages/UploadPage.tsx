@@ -143,6 +143,7 @@ export default function UploadPage() {
               tmdbId: item.overrides?.tmdbId ?? item.analysis?.tmdb?.id,
               tmdbType: item.overrides?.tmdbType ?? item.analysis?.tmdbType,
               tmdbTitle: item.overrides?.tmdbTitle ?? item.analysis?.tmdb?.title,
+              tmdbPosterPath: item.overrides?.tmdbPosterPath ?? item.analysis?.tmdb?.posterPath,
             }}
             onCancel={() => setEditingId(null)}
             onSave={(overrides) => {
@@ -268,9 +269,9 @@ function QueueItemCard({ item, running, onValidate, onUnvalidate, onEdit, onRemo
               </div>
             )}
           </div>
-          {a.tmdb?.posterPath ? (
+          {(ov.tmdbPosterPath || a.tmdb?.posterPath) ? (
             <img
-              src={a.tmdb.posterPath}
+              src={ov.tmdbPosterPath || a.tmdb?.posterPath}
               alt=""
               className="qi-poster"
               loading="lazy"
