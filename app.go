@@ -188,7 +188,8 @@ func (a *App) CheckUpdate() UpdateInfo {
 	current := strings.TrimPrefix(AppVersion, "v")
 	info.Latest = latest
 	info.URL = release.HTMLURL
-	info.Available = latest != "" && latest != current
+	// Ne pas bloquer en dev (AppVersion="dev" → wails dev / build local)
+	info.Available = latest != "" && latest != current && current != "dev"
 
 	return info
 }
