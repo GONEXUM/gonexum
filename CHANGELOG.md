@@ -5,6 +5,13 @@ Toutes les modifications notables de GONEXUM sont documentées dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le projet suit [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [3.1.12] - 2026-04-27
+
+### Ajouté
+- **Badge source TMDB** sur la card item desktop : indique si le match vient du proxy nexum (badge vert "proxy") ou de l'API TMDB officielle en fallback (badge jaune "direct"). Utile pour diagnostiquer les cas où le proxy échoue silencieusement et qu'on tombe sur un mauvais résultat via TMDB direct.
+- `GetLastTMDBSource()` exposé via Wails pour les besoins de debug.
+- `Debug.OpenInspectorOnStartup` ajouté dans `main.go` (devtools restent strippés en build production, utiliser `wails dev` ou `wails build -debug`).
+
 ## [3.1.11] - 2026-04-27
 
 ### Corrigé

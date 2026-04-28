@@ -83,9 +83,12 @@ func tmdbGet(rawURL string) ([]byte, error) {
 	return body, nil
 }
 
+var lastTMDBSource = "none"
+
 func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	results, err := searchTMDBProxy(query, mediaType)
 	if err == nil && len(results) > 0 {
+		lastTMDBSource = "proxy"
 		return results, nil
 	}
 	// Fallback API officielle : auto-détecte movie/tv depuis le nom si non précisé
@@ -94,6 +97,7 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 		dt = detectMediaType(query)
 	}
 	if direct, derr := searchTMDBDirect(query, dt); derr == nil && len(direct) > 0 {
+		lastTMDBSource = "direct"
 		return direct, nil
 	}
 	// Si la première tentative directe a échoué et qu'on avait deviné, essaye l'autre type
@@ -103,9 +107,11 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 			other = "tv"
 		}
 		if direct, derr := searchTMDBDirect(query, other); derr == nil && len(direct) > 0 {
+			lastTMDBSource = "direct"
 			return direct, nil
 		}
 	}
+	lastTMDBSource = "none"
 	if err != nil {
 		return nil, err
 	}

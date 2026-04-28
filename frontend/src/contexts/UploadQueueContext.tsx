@@ -3,7 +3,7 @@ import {
   CreateTorrent, SearchTMDB, GetTMDBDetails, GenerateNFO, SaveNFO,
   UploadTorrent, DownloadTorrent, LargestVideoFile,
   AppLoadSettings, GenerateBBCode, CheckDuplicate, SaveHistoryEntry,
-  GetCategories,
+  GetCategories, GetLastTMDBSource,
 } from '../../wailsjs/go/main/App'
 import { getMediaInfoJS, getMediaInfoCLIText } from '../services/mediainfo'
 import { OnFileDrop, OnFileDropOff, EventsOn, EventsOff } from '../../wailsjs/runtime/runtime'
@@ -24,6 +24,7 @@ export interface AnalysisResult {
   mediaInfoCLI: string
   tmdb: main.TMDBDetails  // vide si aucun match
   tmdbType: string
+  tmdbSource: string  // 'proxy' | 'direct' | 'none'
   categoryId: number
   categoryName: string
   bbcodeDescription: string
@@ -117,15 +118,15 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
       // TMDB auto-search
       let tmdb: main.TMDBDetails = {} as main.TMDBDetails
       let tmdbType = 'movie'
+      let tmdbSource = 'none'
       try {
         const results = await SearchTMDB(releaseName, '')
-        console.log('[TMDB] search results:', results)
+        tmdbSource = await GetLastTMDBSource().catch(() => 'none')
         if (results && results.length > 0) {
           tmdb = await GetTMDBDetails(results[0].id, results[0].mediaType)
           tmdbType = results[0].mediaType
-          console.log('[TMDB] details:', tmdb, 'posterPath:', tmdb?.posterPath)
         }
-      } catch (e) { console.error('[TMDB] error:', e) }
+      } catch { /* */ }
 
       const categoryId = tmdbType === 'tv' ? 2 : 1
       const category = categories.find(c => c.id === categoryId)?.name
@@ -141,7 +142,7 @@ export function UploadQueueProvider({ children }: { children: React.ReactNode })
         analysis: {
           releaseName,
           mediaInfo, mediaInfoCLI,
-          tmdb, tmdbType,
+          tmdb, tmdbType, tmdbSource,
           categoryId, categoryName: category,
           bbcodeDescription: description,
         },

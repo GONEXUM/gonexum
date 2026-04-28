@@ -4,43 +4,45 @@ import {main} from '../models';
 
 export function AppLoadSettings():Promise<main.Settings>;
 
-export function GenerateBBCode(arg1:string,arg2:string):Promise<string>;
+export function AppSaveSettings(arg1:main.Settings):Promise<void>;
 
 export function CheckDuplicate(arg1:string):Promise<main.DuplicateCheckResult>;
 
-export function SaveHistoryEntry(arg1:main.HistoryEntry):Promise<void>;
-
-export function ListHistory(arg1:number,arg2:number,arg3:string):Promise<main.HistoryEntry[]>;
-
-export function DeleteHistoryEntry(arg1:number):Promise<void>;
+export function CheckUpdate():Promise<main.UpdateInfo>;
 
 export function ClearHistory():Promise<void>;
 
-export function GetCategories():Promise<main.Category[]>;
-
-export function AppSaveSettings(arg1:main.Settings):Promise<void>;
-
-export function CheckUpdate():Promise<main.UpdateInfo>;
-
 export function CreateTorrent(arg1:string):Promise<main.TorrentResult>;
 
+export function DeleteHistoryEntry(arg1:number):Promise<void>;
+
 export function DownloadTorrent(arg1:number):Promise<string>;
+
+export function GenerateBBCode(arg1:string,arg2:string):Promise<string>;
 
 export function GenerateNFO(arg1:main.TMDBDetails,arg2:main.MediaInfo,arg3:string):Promise<string>;
 
 export function GetAppVersion():Promise<string>;
 
+export function GetCategories():Promise<Array<main.Category>>;
+
 export function GetFileSize(arg1:string):Promise<number>;
+
+export function GetLastTMDBSource():Promise<string>;
 
 export function GetTMDBDetails(arg1:number,arg2:string):Promise<main.TMDBDetails>;
 
 export function LargestVideoFile(arg1:string):Promise<string>;
+
+export function ListHistory(arg1:number,arg2:number,arg3:string):Promise<Array<main.HistoryEntry>>;
 
 export function PreviewNFO(arg1:string):Promise<string>;
 
 export function ReadFileChunk(arg1:string,arg2:number,arg3:number):Promise<string>;
 
 export function ReadTextFile(arg1:string):Promise<string>;
+
+export function SaveHistoryEntry(arg1:main.HistoryEntry):Promise<void>;
 
 export function SaveNFO(arg1:string,arg2:string):Promise<string>;
 

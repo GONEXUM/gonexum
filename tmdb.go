@@ -78,10 +78,17 @@ func rawToString(raw json.RawMessage) string {
 	return ""
 }
 
+// LastTMDBSource garde la trace de la dernière source utilisée.
+// Lu par GetLastTMDBSource() pour affichage dans l'UI.
+var lastTMDBSource = "none"
+
+func (a *App) GetLastTMDBSource() string { return lastTMDBSource }
+
 // SearchTMDB tries the nexum proxy first, falls back to the official TMDB API.
 func (a *App) SearchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	results, err := searchTMDBProxy(query, mediaType)
 	if err == nil && len(results) > 0 {
+		lastTMDBSource = "proxy"
 		return results, nil
 	}
 	// Fallback API officielle : auto-détecte movie/tv depuis le nom si non précisé
@@ -90,6 +97,7 @@ func (a *App) SearchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 		dt = detectMediaType(query)
 	}
 	if direct, derr := searchTMDBDirect(query, dt); derr == nil && len(direct) > 0 {
+		lastTMDBSource = "direct"
 		return direct, nil
 	}
 	if mediaType == "" {
@@ -98,9 +106,11 @@ func (a *App) SearchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 			other = "tv"
 		}
 		if direct, derr := searchTMDBDirect(query, other); derr == nil && len(direct) > 0 {
+			lastTMDBSource = "direct"
 			return direct, nil
 		}
 	}
+	lastTMDBSource = "none"
 	if err != nil {
 		return nil, err
 	}

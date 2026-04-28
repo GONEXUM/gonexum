@@ -6,48 +6,36 @@ export function AppLoadSettings() {
   return window['go']['main']['App']['AppLoadSettings']();
 }
 
-export function GenerateBBCode(arg1, arg2) {
-  return window['go']['main']['App']['GenerateBBCode'](arg1, arg2);
+export function AppSaveSettings(arg1) {
+  return window['go']['main']['App']['AppSaveSettings'](arg1);
 }
 
 export function CheckDuplicate(arg1) {
   return window['go']['main']['App']['CheckDuplicate'](arg1);
 }
 
-export function SaveHistoryEntry(arg1) {
-  return window['go']['main']['App']['SaveHistoryEntry'](arg1);
-}
-
-export function ListHistory(arg1, arg2, arg3) {
-  return window['go']['main']['App']['ListHistory'](arg1, arg2, arg3);
-}
-
-export function DeleteHistoryEntry(arg1) {
-  return window['go']['main']['App']['DeleteHistoryEntry'](arg1);
+export function CheckUpdate() {
+  return window['go']['main']['App']['CheckUpdate']();
 }
 
 export function ClearHistory() {
   return window['go']['main']['App']['ClearHistory']();
 }
 
-export function GetCategories() {
-  return window['go']['main']['App']['GetCategories']();
-}
-
-export function AppSaveSettings(arg1) {
-  return window['go']['main']['App']['AppSaveSettings'](arg1);
-}
-
-export function CheckUpdate() {
-  return window['go']['main']['App']['CheckUpdate']();
-}
-
 export function CreateTorrent(arg1) {
   return window['go']['main']['App']['CreateTorrent'](arg1);
 }
 
+export function DeleteHistoryEntry(arg1) {
+  return window['go']['main']['App']['DeleteHistoryEntry'](arg1);
+}
+
 export function DownloadTorrent(arg1) {
   return window['go']['main']['App']['DownloadTorrent'](arg1);
+}
+
+export function GenerateBBCode(arg1, arg2) {
+  return window['go']['main']['App']['GenerateBBCode'](arg1, arg2);
 }
 
 export function GenerateNFO(arg1, arg2, arg3) {
@@ -58,8 +46,16 @@ export function GetAppVersion() {
   return window['go']['main']['App']['GetAppVersion']();
 }
 
+export function GetCategories() {
+  return window['go']['main']['App']['GetCategories']();
+}
+
 export function GetFileSize(arg1) {
   return window['go']['main']['App']['GetFileSize'](arg1);
+}
+
+export function GetLastTMDBSource() {
+  return window['go']['main']['App']['GetLastTMDBSource']();
 }
 
 export function GetTMDBDetails(arg1, arg2) {
@@ -68,6 +64,10 @@ export function GetTMDBDetails(arg1, arg2) {
 
 export function LargestVideoFile(arg1) {
   return window['go']['main']['App']['LargestVideoFile'](arg1);
+}
+
+export function ListHistory(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ListHistory'](arg1, arg2, arg3);
 }
 
 export function PreviewNFO(arg1) {
@@ -80,6 +80,10 @@ export function ReadFileChunk(arg1, arg2, arg3) {
 
 export function ReadTextFile(arg1) {
   return window['go']['main']['App']['ReadTextFile'](arg1);
+}
+
+export function SaveHistoryEntry(arg1) {
+  return window['go']['main']['App']['SaveHistoryEntry'](arg1);
 }
 
 export function SaveNFO(arg1, arg2) {

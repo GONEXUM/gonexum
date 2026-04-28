@@ -244,7 +244,21 @@ function QueueItemCard({ item, running, onValidate, onUnvalidate, onEdit, onRemo
               <span className="qi-detail-label">🎬 TMDB</span>
               <span className="qi-detail-value">
                 {effTmdbTitle
-                  ? `${effTmdbTitle} ${effTmdbYear ? '(' + effTmdbYear + ')' : ''} · ${effTmdbType === 'tv' ? 'Série' : 'Film'}`
+                  ? <>
+                      {`${effTmdbTitle} ${effTmdbYear ? '(' + effTmdbYear + ')' : ''} · ${effTmdbType === 'tv' ? 'Série' : 'Film'}`}
+                      {a.tmdbSource && a.tmdbSource !== 'none' && (
+                        <span
+                          title={a.tmdbSource === 'proxy' ? 'Source : proxy nexum' : 'Source : API TMDB officielle (fallback)'}
+                          style={{
+                            marginLeft: 8, fontSize: 10, padding: '1px 6px',
+                            background: a.tmdbSource === 'proxy' ? 'rgba(34,197,94,.12)' : 'rgba(234,179,8,.12)',
+                            color: a.tmdbSource === 'proxy' ? '#86efac' : '#fde68a',
+                            border: a.tmdbSource === 'proxy' ? '1px solid rgba(34,197,94,.3)' : '1px solid rgba(234,179,8,.3)',
+                            borderRadius: 10, fontWeight: 600,
+                          }}
+                        >{a.tmdbSource}</span>
+                      )}
+                    </>
                   : <span style={{ color: 'var(--color-warning)' }}>Aucun match</span>
                 }
               </span>

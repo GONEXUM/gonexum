@@ -57,9 +57,12 @@ type nexusDetailResult struct {
 
 const tmdbImageBase = "https://image.tmdb.org/t/p/w200"
 
+var lastTMDBSource = "none"
+
 func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 	results, err := searchTMDBProxy(query, mediaType)
 	if err == nil && len(results) > 0 {
+		lastTMDBSource = "proxy"
 		return results, nil
 	}
 	// Fallback: official TMDB API — auto-détecte movie/tv si non précisé
@@ -68,6 +71,7 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 		dt = detectMediaType(query)
 	}
 	if direct, derr := searchTMDBDirect(query, dt); derr == nil && len(direct) > 0 {
+		lastTMDBSource = "direct"
 		return direct, nil
 	}
 	if mediaType == "" {
@@ -76,9 +80,11 @@ func searchTMDB(query string, mediaType string) ([]TMDBResult, error) {
 			other = "tv"
 		}
 		if direct, derr := searchTMDBDirect(query, other); derr == nil && len(direct) > 0 {
+			lastTMDBSource = "direct"
 			return direct, nil
 		}
 	}
+	lastTMDBSource = "none"
 	if err != nil {
 		return nil, err
 	}
